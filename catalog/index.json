@@ -1,0 +1,364 @@
+{
+  "name": "WrexrOS Official App Catalog",
+  "version": 1,
+  "description": "Signed Docker app templates shipped with WrexrOS.",
+  "apps": [
+    {
+      "id": "nginx-proxy-manager",
+      "name": "Nginx Proxy Manager",
+      "category": "networking",
+      "description": "Reverse proxy with a web UI, free Let's Encrypt certificates and access control lists.",
+      "version": "2.11.3",
+      "icon": "🌐",
+      "image": "jc21/nginx-proxy-manager:2.11.3",
+      "dockerHub": "https://hub.docker.com/r/jc21/nginx-proxy-manager",
+      "tags": ["proxy", "reverse-proxy", "letsencrypt", "http"],
+      "ports": [
+        { "container": 80, "host": 80, "protocol": "tcp" },
+        { "container": 81, "host": 81, "protocol": "tcp" },
+        { "container": 443, "host": 443, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/data", "host": "/mnt/docker/apps/nginx-proxy-manager/data", "mode": "rw" },
+        { "container": "/etc/letsencrypt", "host": "/mnt/docker/apps/nginx-proxy-manager/letsencrypt", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false }
+      ],
+      "limits": { "cpus": 1.0, "memory": "512m" },
+      "capabilities": ["NET_BIND_SERVICE"],
+      "trusted": true,
+      "signature": "MEQCIF7xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6=",
+      "repo": "wrexr-official",
+      "homepage": "https://nginx-proxy-manager.app/",
+      "updateAvailable": false
+    },
+    {
+      "id": "pihole",
+      "name": "Pi-hole",
+      "category": "networking",
+      "description": "Network-wide DNS sinkhole and DHCP server with a lightweight admin dashboard.",
+      "version": "2026.02.1",
+      "icon": "🕳️",
+      "image": "pihole/pihole:2026.02.1",
+      "dockerHub": "https://hub.docker.com/r/pihole/pihole",
+      "tags": ["dns", "dhcp", "adblock"],
+      "ports": [
+        { "container": 53, "host": 53, "protocol": "tcp" },
+        { "container": 53, "host": 53, "protocol": "udp" },
+        { "container": 80, "host": 8081, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/etc/pihole", "host": "/mnt/docker/apps/pihole/etc", "mode": "rw" },
+        { "container": "/etc/dnsmasq.d", "host": "/mnt/docker/apps/pihole/dnsmasq", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false },
+        { "name": "WEBPASSWORD", "default": "", "description": "Admin password; set a strong value before exposing the UI.", "required": true },
+        { "name": "DNSMASQ_LISTENING", "default": "all", "description": "Interface policy for the DNS listener.", "required": false }
+      ],
+      "limits": { "cpus": 0.5, "memory": "256m" },
+      "capabilities": ["NET_ADMIN", "NET_RAW"],
+      "trusted": true,
+      "signature": "MEQCIG9xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8=",
+      "repo": "wrexr-official",
+      "homepage": "https://pi-hole.net/",
+      "updateAvailable": false
+    },
+    {
+      "id": "jellyfin",
+      "name": "Jellyfin",
+      "category": "media",
+      "description": "Free and open-source media server for movies, music and live TV.",
+      "version": "10.10.7",
+      "icon": "🎬",
+      "image": "jellyfin/jellyfin:10.10.7",
+      "dockerHub": "https://hub.docker.com/r/jellyfin/jellyfin",
+      "tags": ["media", "streaming", "video", "music"],
+      "ports": [
+        { "container": 8096, "host": 8096, "protocol": "tcp" },
+        { "container": 8920, "host": 8920, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/config", "host": "/mnt/docker/apps/jellyfin/config", "mode": "rw" },
+        { "container": "/media", "host": "/mnt/media", "mode": "ro" },
+        { "container": "/cache", "host": "/mnt/docker/apps/jellyfin/cache", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false },
+        { "name": "JELLYFIN_PublishedServerUrl", "default": "", "description": "Public URL used for discovery and metadata.", "required": false }
+      ],
+      "limits": { "cpus": 4.0, "memory": "4g" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIH1xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT1=",
+      "repo": "wrexr-official",
+      "homepage": "https://jellyfin.org/",
+      "updateAvailable": false
+    },
+    {
+      "id": "nextcloud",
+      "name": "Nextcloud",
+      "category": "productivity",
+      "description": "Self-hosted file sync, calendar, contacts and collaborative documents.",
+      "version": "31.0.4",
+      "icon": "☁️",
+      "image": "nextcloud:31.0.4-apache",
+      "dockerHub": "https://hub.docker.com/_/nextcloud",
+      "tags": ["files", "sync", "collaboration", "office"],
+      "ports": [
+        { "container": 80, "host": 8082, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/var/www/html", "host": "/mnt/docker/apps/nextcloud/html", "mode": "rw" },
+        { "container": "/mnt/data", "host": "/mnt/docker/apps/nextcloud/data", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "NEXTCLOUD_ADMIN_USER", "default": "", "description": "Initial administrator username.", "required": true },
+        { "name": "NEXTCLOUD_ADMIN_PASSWORD", "default": "", "description": "Initial administrator password; choose a strong unique value.", "required": true },
+        { "name": "MYSQL_HOST", "default": "postgres", "description": "Database hostname.", "required": false },
+        { "name": "MYSQL_DATABASE", "default": "nextcloud", "description": "Database name.", "required": false }
+      ],
+      "limits": { "cpus": 2.0, "memory": "2g" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIF2xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT2=",
+      "repo": "wrexr-official",
+      "homepage": "https://nextcloud.com/",
+      "updateAvailable": false
+    },
+    {
+      "id": "home-assistant",
+      "name": "Home Assistant",
+      "category": "productivity",
+      "description": "Open-source home automation platform with local control and a rich integration ecosystem.",
+      "version": "2026.2.3",
+      "icon": "🏠",
+      "image": "ghcr.io/home-assistant/home-assistant:2026.2.3",
+      "dockerHub": "https://hub.docker.com/r/homeassistant/home-assistant",
+      "tags": ["iot", "automation", "smarthome"],
+      "ports": [
+        { "container": 8123, "host": 8123, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/config", "host": "/mnt/docker/apps/home-assistant/config", "mode": "rw" },
+        { "container": "/etc/localtime", "host": "/etc/localtime", "mode": "ro" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false }
+      ],
+      "limits": { "cpus": 2.0, "memory": "1g" },
+      "capabilities": ["NET_ADMIN", "NET_RAW"],
+      "trusted": true,
+      "signature": "MEQCIH3xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT3=",
+      "repo": "wrexr-official",
+      "homepage": "https://www.home-assistant.io/",
+      "updateAvailable": false
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "category": "databases",
+      "description": "Production-grade relational database with ZFS-friendly data directory layout.",
+      "version": "17.4",
+      "icon": "🐘",
+      "image": "postgres:17.4-bookworm",
+      "dockerHub": "https://hub.docker.com/_/postgres",
+      "tags": ["sql", "database", "relational"],
+      "ports": [
+        { "container": 5432, "host": 5432, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/var/lib/postgresql/data", "host": "/mnt/docker/apps/postgres/data", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "POSTGRES_DB", "default": "wrexr", "description": "Default database name.", "required": false },
+        { "name": "POSTGRES_USER", "default": "wrexr", "description": "Default database user.", "required": false },
+        { "name": "POSTGRES_PASSWORD", "default": "", "description": "Database password; generate a strong secret before first start.", "required": true },
+        { "name": "PGDATA", "default": "/var/lib/postgresql/data/pgdata", "description": "Data directory inside the container.", "required": false }
+      ],
+      "limits": { "cpus": 2.0, "memory": "2g" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIF4xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT4=",
+      "repo": "wrexr-official",
+      "homepage": "https://www.postgresql.org/",
+      "updateAvailable": false
+    },
+    {
+      "id": "redis",
+      "name": "Redis",
+      "category": "databases",
+      "description": "Fast in-memory key/value store for caching, queues and ephemeral state.",
+      "version": "7.4.2",
+      "icon": "⚡",
+      "image": "redis:7.4.2-alpine",
+      "dockerHub": "https://hub.docker.com/_/redis",
+      "tags": ["cache", "key-value", "queue"],
+      "ports": [
+        { "container": 6379, "host": 6379, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/data", "host": "/mnt/docker/apps/redis/data", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "REDIS_PASSWORD", "default": "", "description": "Optional AUTH password; leave empty only on a trusted network.", "required": false },
+        { "name": "REDIS_MAXMEMORY", "default": "512mb", "description": "Maximum memory before eviction.", "required": false }
+      ],
+      "limits": { "cpus": 1.0, "memory": "768m" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIH5xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT5=",
+      "repo": "wrexr-official",
+      "homepage": "https://redis.io/",
+      "updateAvailable": false
+    },
+    {
+      "id": "grafana",
+      "name": "Grafana",
+      "category": "monitoring",
+      "description": "Dashboards and alerting for Prometheus, Loki and other data sources.",
+      "version": "11.6.1",
+      "icon": "📊",
+      "image": "grafana/grafana:11.6.1",
+      "dockerHub": "https://hub.docker.com/r/grafana/grafana",
+      "tags": ["dashboard", "observability", "alerting"],
+      "ports": [
+        { "container": 3000, "host": 3000, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/var/lib/grafana", "host": "/mnt/docker/apps/grafana/data", "mode": "rw" },
+        { "container": "/etc/grafana/provisioning", "host": "/mnt/docker/apps/grafana/provisioning", "mode": "ro" }
+      ],
+      "env": [
+        { "name": "GF_SECURITY_ADMIN_USER", "default": "", "description": "Initial admin username; set explicitly.", "required": true },
+        { "name": "GF_SECURITY_ADMIN_PASSWORD", "default": "", "description": "Initial admin password; set a strong unique value.", "required": true },
+        { "name": "GF_USERS_ALLOW_SIGN_UP", "default": "false", "description": "Disable open sign-up.", "required": false }
+      ],
+      "limits": { "cpus": 1.0, "memory": "1g" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIF6xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT6=",
+      "repo": "wrexr-official",
+      "homepage": "https://grafana.com/",
+      "updateAvailable": false
+    },
+    {
+      "id": "prometheus",
+      "name": "Prometheus",
+      "category": "monitoring",
+      "description": "Pull-based metrics collection and time-series storage with alertmanager integration.",
+      "version": "v3.3.2",
+      "icon": "📈",
+      "image": "prom/prometheus:v3.3.2",
+      "dockerHub": "https://hub.docker.com/r/prom/prometheus",
+      "tags": ["metrics", "time-series", "alerting"],
+      "ports": [
+        { "container": 9090, "host": 9090, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/prometheus", "host": "/mnt/docker/apps/prometheus/data", "mode": "rw" },
+        { "container": "/etc/prometheus/prometheus.yml", "host": "/mnt/docker/apps/prometheus/prometheus.yml", "mode": "ro" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false }
+      ],
+      "limits": { "cpus": 2.0, "memory": "2g" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIH7xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT7=",
+      "repo": "wrexr-official",
+      "homepage": "https://prometheus.io/",
+      "updateAvailable": false
+    },
+    {
+      "id": "minio",
+      "name": "MinIO",
+      "category": "storage",
+      "description": "S3-compatible object storage with erasure coding and bucket policies.",
+      "version": "RELEASE.2026-02-10T00-00-00Z",
+      "icon": "🗄️",
+      "image": "minio/minio:RELEASE.2026-02-10T00-00-00Z",
+      "dockerHub": "https://hub.docker.com/r/minio/minio",
+      "tags": ["s3", "object-storage", "backup-target"],
+      "ports": [
+        { "container": 9000, "host": 9000, "protocol": "tcp" },
+        { "container": 9001, "host": 9001, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/data", "host": "/mnt/docker/apps/minio/data", "mode": "rw" },
+        { "container": "/root/.minio", "host": "/mnt/docker/apps/minio/config", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "MINIO_ROOT_USER", "default": "", "description": "Root access key; generate a long random value.", "required": true },
+        { "name": "MINIO_ROOT_PASSWORD", "default": "", "description": "Root secret key; generate a long random value.", "required": true },
+        { "name": "MINIO_BROWSER_REDIRECT_URL", "default": "", "description": "Public URL of the web console.", "required": false }
+      ],
+      "limits": { "cpus": 4.0, "memory": "4g" },
+      "capabilities": [],
+      "trusted": true,
+      "signature": "MEQCIF8xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT8=",
+      "repo": "wrexr-official",
+      "homepage": "https://min.io/",
+      "updateAvailable": false
+    },
+    {
+      "id": "wireguard",
+      "name": "WireGuard",
+      "category": "security",
+      "description": "Modern VPN server with a small attack surface and fast encrypted tunnels.",
+      "version": "2.6.14",
+      "icon": "🔐",
+      "image": "linuxserver/wireguard:2.6.14",
+      "dockerHub": "https://hub.docker.com/r/linuxserver/wireguard",
+      "tags": ["vpn", "wireguard", "remote-access"],
+      "ports": [
+        { "container": 51820, "host": 51820, "protocol": "udp" }
+      ],
+      "volumes": [
+        { "container": "/config", "host": "/mnt/docker/apps/wireguard/config", "mode": "rw" },
+        { "container": "/lib/modules", "host": "/lib/modules", "mode": "ro" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false },
+        { "name": "SERVERURL", "default": "", "description": "Public hostname or IP of the VPN server.", "required": true },
+        { "name": "PEER_PRIVATE_KEY", "default": "", "description": "Peer private key; provide a generated secret, never a shared default.", "required": true }
+      ],
+      "limits": { "cpus": 1.0, "memory": "256m" },
+      "capabilities": ["NET_ADMIN", "SYS_MODULE"],
+      "trusted": true,
+      "signature": "MEQCIH9xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT9=",
+      "repo": "wrexr-official",
+      "homepage": "https://www.wireguard.com/",
+      "updateAvailable": false
+    },
+    {
+      "id": "tailscale",
+      "name": "Tailscale",
+      "category": "security",
+      "description": "Zero-config mesh VPN based on WireGuard with SSO and ACL management.",
+      "version": "1.86.2",
+      "icon": "🧵",
+      "image": "tailscale/tailscale:v1.86.2",
+      "dockerHub": "https://hub.docker.com/r/tailscale/tailscale",
+      "tags": ["vpn", "mesh", "zerotrust", "remote-access"],
+      "ports": [],
+      "volumes": [
+        { "container": "/var/lib/tailscale", "host": "/mnt/docker/apps/tailscale/state", "mode": "rw" },
+        { "container": "/dev/net/tun", "host": "/dev/net/tun", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "TS_AUTHKEY", "default": "", "description": "One-time auth key from the Tailscale admin console.", "required": true },
+        { "name": "TS_HOSTNAME", "default": "wrexr-tailscale", "description": "Hostname advertised to the tailnet.", "required": false },
+        { "name": "TS_ROUTES", "default": "", "description": "Comma-separated subnet routes to advertise.", "required": false }
+      ],
+      "limits": { "cpus": 0.5, "memory": "256m" },
+      "capabilities": ["NET_ADMIN", "NET_RAW"],
+      "trusted": true,
+      "signature": "MEQCIF0xQ2vN8sLpR4tY6uI9aB3cD5eG7hJ1kM0nP2qS4tV6wX8yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV1wX3yZ5aB7cD9eF1gH3iJ5kL7mN9oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ0kL2mN4oP6qR8sU0=",
+      "repo": "wrexr-official",
+      "homepage": "https://tailscale.com/",
+      "updateAvailable": false
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+#!/bin/sh
+# wrexctl launcher. Resolves symlinks so npm-style installs into /usr/local/bin work.
+set -eu
+
+SELF=$0
+case "$SELF" in
+  */*) ;;
+  *) SELF=$(command -v "$SELF") ;;
+esac
+
+# Follow a symlink chain to the real script (readlink -f is not portable).
+while [ -L "$SELF" ]; do
+  LINK=$(readlink "$SELF")
+  case "$LINK" in
+    /*) SELF=$LINK ;;
+    *) SELF=$(CDPATH= cd -- "$(dirname -- "$SELF")" && pwd)/$LINK ;;
+  esac
+done
+
+BIN_DIR=$(CDPATH= cd -- "$(dirname -- "$SELF")" && pwd)
+PKG_DIR=$(CDPATH= cd -- "$BIN_DIR/.." && pwd)
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "wrexctl: node (Node.js 22.6+) is required on PATH" >&2
+  exit 127
+fi
+
+exec node --experimental-strip-types "$PKG_DIR/src/wrexctl.ts" "$@"

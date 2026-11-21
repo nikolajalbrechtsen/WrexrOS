@@ -1,0 +1,17 @@
+{
+  "name": "wrexr-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WrexrOS management daemon - dependency-free Node backend",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types src/index.ts",
+    "dev": "node --experimental-strip-types --watch src/index.ts",
+    "test": "node --test tests/*.test.ts",
+    "check": "node --experimental-strip-types --input-type=module -e \"import('./src/config.ts').then(() => import('./src/util.ts')).then(() => console.log('core modules import cleanly'))\""
+  },
+  "dependencies": {}
+}

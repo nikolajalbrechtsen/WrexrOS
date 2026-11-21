@@ -1,0 +1,65 @@
+{
+  "name": "Example Community Templates",
+  "description": "Two example app templates demonstrating the custom-repo format.",
+  "maintainer": "community@example.invalid",
+  "version": 1,
+  "signature": "MEQCIF_example_placeholder_signature_for_the_repo_manifest_replace_with_ed25519_base64==",
+  "apps": [
+    {
+      "id": "uptime-kuma",
+      "name": "Uptime Kuma",
+      "category": "monitoring",
+      "description": "Self-hosted uptime monitoring with status pages and notifications.",
+      "version": "1.24.2",
+      "icon": "💓",
+      "image": "louislam/uptime-kuma:1.24.2",
+      "dockerHub": "https://hub.docker.com/r/louislam/uptime-kuma",
+      "tags": ["uptime", "status-page", "community"],
+      "ports": [
+        { "container": 3001, "host": 3001, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/app/data", "host": "/mnt/docker/apps/uptime-kuma/data", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false }
+      ],
+      "limits": { "cpus": 1.0, "memory": "512m" },
+      "capabilities": [],
+      "trusted": false,
+      "signature": "MEQCIF_example_placeholder_signature_replace_with_ed25519_base64_uptime_kuma==",
+      "repo": "example-community",
+      "homepage": "https://github.com/louislam/uptime-kuma",
+      "updateAvailable": false
+    },
+    {
+      "id": "mealie",
+      "name": "Mealie",
+      "category": "productivity",
+      "description": "Recipe manager with meal planning, shopping lists and imports.",
+      "version": "v1.12.0",
+      "icon": "🍲",
+      "image": "hay-kot/mealie:v1.12.0",
+      "dockerHub": "https://hub.docker.com/r/haykot/mealie",
+      "tags": ["recipes", "meal-planning", "community"],
+      "ports": [
+        { "container": 9000, "host": 9099, "protocol": "tcp" }
+      ],
+      "volumes": [
+        { "container": "/app/data", "host": "/mnt/docker/apps/mealie/data", "mode": "rw" }
+      ],
+      "env": [
+        { "name": "TZ", "default": "UTC", "description": "Container timezone.", "required": false },
+        { "name": "MEALIE_ADMIN_EMAIL", "default": "", "description": "Initial administrator email.", "required": true },
+        { "name": "MEALIE_ADMIN_PASSWORD", "default": "", "description": "Initial administrator password; set a strong unique value.", "required": true }
+      ],
+      "limits": { "cpus": 1.0, "memory": "1g" },
+      "capabilities": [],
+      "trusted": false,
+      "signature": "MEQCIF_example_placeholder_signature_replace_with_ed25519_base64_mealie==",
+      "repo": "example-community",
+      "homepage": "https://mealie.io/",
+      "updateAvailable": false
+    }
+  ]
+}

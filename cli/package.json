@@ -1,0 +1,24 @@
+{
+  "name": "wrexctl",
+  "version": "0.1.0",
+  "description": "Command-line client for the WrexrOS daemon API",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "bin": {
+    "wrexctl": "bin/wrexctl"
+  },
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/wrexctl.test.ts",
+    "test:direct": "node --experimental-strip-types tests/wrexctl.test.ts"
+  },
+  "dependencies": {}
+}
