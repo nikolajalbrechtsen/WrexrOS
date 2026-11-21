@@ -45,7 +45,7 @@ API, or the `wrexctl` CLI.
 * **Operations** — alerts (email/webhook/Pushover), scheduled snapshots/backups and
   replication prep, signed plugin framework, multi-node linking / HA prep.
 * **CI/CD** — GitHub Actions runs tests, builds the web bundle, builds an ISO and publishes
-  signed release assets with checksums.
+  release assets with checksums and optional GPG signatures.
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for stretch goals (HA failover, clustering, kiosk
 extensions, plugin marketplace) and what is intentionally out of scope for 0.1.0.

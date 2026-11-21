@@ -46,6 +46,8 @@ this release establishes the full foundation.
   so live-boot hooks and CLI helpers are executable in the image.
 - Builder image installs `cpio`, required by live-build when assembling the Debian installer
   initrd; the tagged CI run previously failed with exit 127.
+- CI removes the root-owned checksum file before regenerating it, so the release job can
+  publish `SHA256SUMS` without a permission error.
 
 ### Security
 - No default credentials; first boot requires explicit password or SSH key setup.
