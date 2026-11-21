@@ -41,6 +41,10 @@ this release establishes the full foundation.
 - **CI/CD**: GitHub Actions workflow running tests, building the SPA, building and checking
   the ISO, and publishing tagged releases with checksums.
 
+### Fixed
+- ISO builder restores executable bits after copying repository content into the chroot tree,
+  so live-boot hooks and CLI helpers are executable in the image.
+
 ### Security
 - No default credentials; first boot requires explicit password or SSH key setup.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.

@@ -124,7 +124,13 @@ prepare_config() {
   cp -a "${SCRIPT_DIR}/live-build/includes.chroot/." "${BUILD_DIR}/config/includes.chroot/"
   cp -a "${SCRIPT_DIR}/live-build/includes.binary/." "${BUILD_DIR}/config/includes.binary/"
 
+  rsync -a \
+    --exclude '/.git' --exclude '/packaging/build' --exclude '/packaging/out' \
+    --exclude '/node_modules' --exclude '*.iso' \
+    "${REPO_ROOT}/" "${BUILD_DIR}/config/includes.chroot/opt/wrexr/"
+
   # Windows checkouts do not carry executable bits; restore them in the image.
+  # This must run after rsync, when the repository files exist in the chroot tree.
   chmod 0755 \
     "${BUILD_DIR}/config/includes.chroot/usr/local/bin/wrexr-live-install" \
     "${BUILD_DIR}/config/includes.chroot/opt/wrexr/installer/wrexr-installer.sh" \
@@ -133,11 +139,6 @@ prepare_config() {
     "${BUILD_DIR}/config/includes.chroot/opt/wrexr/boot/"*.sh \
     "${BUILD_DIR}/config/includes.chroot/opt/wrexr/updater/wrexr-update.sh" \
     "${BUILD_DIR}/config/includes.chroot/opt/wrexr/cli/bin/wrexctl"
-
-  rsync -a \
-    --exclude '/.git' --exclude '/packaging/build' --exclude '/packaging/out' \
-    --exclude '/node_modules' --exclude '*.iso' \
-    "${REPO_ROOT}/" "${BUILD_DIR}/config/includes.chroot/opt/wrexr/"
 
   local unit
   for unit in "${REPO_ROOT}"/systemd/*.service; do
