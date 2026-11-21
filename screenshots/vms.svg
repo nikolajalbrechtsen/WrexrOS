@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#0d1116"/><rect width="236" height="900" fill="#10161d"/>
+  <text x="28" y="52" fill="#e6edf3" font-size="19" font-weight="700">WrexrOS</text>
+  <text x="28" y="70" fill="#8b9bab" font-size="10" letter-spacing="2">HYPERVISOR OS</text>
+  <g fill="#8b9bab" font-size="14"><text x="54" y="174">▦  Dashboard</text></g>
+  <rect x="16" y="148" width="204" height="40" rx="8" fill="#1b242e"/>
+  <text x="54" y="174" fill="#2dd4bf" font-size="14" font-weight="600">▣  Virtual Machines</text>
+  <g fill="#8b9bab" font-size="14"><text x="54" y="220">▤  Containers</text><text x="54" y="266">◈  Storage</text><text x="54" y="312">▧  File Shares</text><text x="54" y="358">⬡  Docker Apps</text><text x="54" y="404">⚙  Settings</text></g>
+  <text x="272" y="46" fill="#e6edf3" font-size="22" font-weight="650">Virtual Machines</text>
+  <text x="272" y="66" fill="#8b9bab" font-size="12">KVM/QEMU and LXC · 6 guests · 2 nodes ready</text>
+  <rect x="1160" y="24" width="120" height="36" rx="8" fill="#2dd4bf"/>
+  <text x="1220" y="47" text-anchor="middle" fill="#06231f" font-size="13" font-weight="700">+ Create VM</text>
+
+  <rect x="272" y="92" width="1130" height="54" rx="10" fill="#151c24" stroke="#27323d"/>
+  <g fill="#8b9bab" font-size="12"><text x="292" y="125">All (6)</text><text x="380" y="125">Running (4)</text><text x="490" y="125">Stopped (2)</text><text x="600" y="125">Templates (8)</text></g>
+  <rect x="292" y="132" width="64" height="3" fill="#2dd4bf"/>
+
+  <rect x="272" y="162" width="1130" height="380" rx="12" fill="#151c24" stroke="#27323d"/>
+  <g fill="#8b9bab" font-size="10"><text x="296" y="190">NAME</text><text x="620" y="190">TYPE</text><text x="740" y="190">CPU / RAM</text><text x="930" y="190">DISK</text><text x="1050" y="190">NODE</text><text x="1190" y="190">STATUS</text></g>
+  <g stroke="#27323d"><line x1="272" y1="204" x2="1402" y2="204"/></g>
+  <g font-size="13" fill="#e6edf3">
+    <text x="296" y="234">win11</text><text x="620" y="234">KVM</text><text x="740" y="234">4 / 8 GiB</text><text x="930" y="234">80 GiB</text><text x="1050" y="234">wrexr-1</text>
+    <text x="296" y="286">opnsense</text><text x="620" y="286">KVM</text><text x="740" y="286">4 / 4 GiB</text><text x="930" y="286">32 GiB</text><text x="1050" y="286">wrexr-1</text>
+    <text x="296" y="338">debian-build</text><text x="620" y="338">LXC</text><text x="740" y="338">2 / 2 GiB</text><text x="930" y="338">20 GiB</text><text x="1050" y="338">wrexr-1</text>
+    <text x="296" y="390">jellyfin-vm</text><text x="620" y="390">KVM</text><text x="740" y="390">8 / 16 GiB</text><text x="930" y="390">256 GiB</text><text x="1050" y="390">wrexr-2</text>
+    <text x="296" y="442">test-win10</text><text x="620" y="442">KVM</text><text x="740" y="442">2 / 4 GiB</text><text x="930" y="442">60 GiB</text><text x="1050" y="442">wrexr-1</text>
+    <text x="296" y="494">alpine-ct</text><text x="620" y="494">LXC</text><text x="740" y="494">1 / 1 GiB</text><text x="930" y="494">8 GiB</text><text x="1050" y="494">wrexr-2</text>
+  </g>
+  <g font-size="10"><rect x="1190" y="220" width="66" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1202" y="234" fill="#3ecf8e">RUNNING</text>
+    <rect x="1190" y="272" width="66" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1202" y="286" fill="#3ecf8e">RUNNING</text>
+    <rect x="1190" y="324" width="66" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1202" y="338" fill="#3ecf8e">RUNNING</text>
+    <rect x="1190" y="376" width="66" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1202" y="390" fill="#3ecf8e">RUNNING</text>
+    <rect x="1190" y="428" width="60" height="20" rx="10" fill="#8b9bab" opacity=".15"/><text x="1202" y="442" fill="#8b9bab">STOPPED</text>
+    <rect x="1190" y="480" width="60" height="20" rx="10" fill="#8b9bab" opacity=".15"/><text x="1202" y="494" fill="#8b9bab">STOPPED</text></g>
+
+  <rect x="272" y="562" width="552" height="300" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="294" y="592" fill="#e6edf3" font-size="14" font-weight="650">PCI / GPU passthrough</text>
+  <text x="294" y="616" fill="#8b9bab" font-size="11">IOMMU groups detected on wrexr-1</text>
+  <g font-size="12" fill="#e6edf3"><text x="294" y="650">NVIDIA RTX 4070</text><text x="294" y="682">Intel i225-V NIC</text><text x="294" y="714">USB controller</text></g>
+  <g font-size="11" fill="#8b9bab"><text x="620" y="650">Group 12</text><text x="620" y="682">Group 7</text><text x="620" y="714">Group 3</text></g>
+  <g font-size="10" fill="#2dd4bf"><text x="730" y="650">USABLE</text><text x="730" y="682">USABLE</text><text x="730" y="714">USABLE</text></g>
+
+  <rect x="840" y="562" width="562" height="300" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="862" y="592" fill="#e6edf3" font-size="14" font-weight="650">Network bridges</text>
+  <text x="862" y="616" fill="#8b9bab" font-size="11">VLAN-aware linux bridges</text>
+  <g font-size="12" fill="#e6edf3"><text x="862" y="652">vmbr0  ·  eno1  ·  untagged</text><text x="862" y="686">vmbr1  ·  eno2  ·  VLAN 10-30</text><text x="862" y="720">vmbr2  ·  bond0 ·  storage</text></g>
+  <rect x="862" y="746" width="180" height="30" rx="7" fill="#1b242e" stroke="#27323d"/>
+  <text x="880" y="766" fill="#8b9bab" font-size="11">+ Add bridge</text>
+</svg>

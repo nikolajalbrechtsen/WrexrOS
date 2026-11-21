@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#0d1116"/><rect width="236" height="900" fill="#10161d"/>
+  <text x="28" y="52" fill="#e6edf3" font-size="19" font-weight="700">WrexrOS</text>
+  <text x="28" y="70" fill="#8b9bab" font-size="10" letter-spacing="2">HYPERVISOR OS</text>
+  <g fill="#8b9bab" font-size="14"><text x="54" y="174">▦  Dashboard</text><text x="54" y="266">◈  Storage</text><text x="54" y="312">▧  File Shares</text></g>
+  <rect x="16" y="240" width="204" height="40" rx="8" fill="#1b242e"/>
+  <text x="54" y="266" fill="#2dd4bf" font-size="14" font-weight="600">◈  Storage</text>
+  <text x="272" y="46" fill="#e6edf3" font-size="22" font-weight="650">Storage</text>
+  <text x="272" y="66" fill="#8b9bab" font-size="12">Parity array · ZFS datasets · SMART · snapshots</text>
+
+  <rect x="272" y="88" width="1130" height="180" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="296" y="120" fill="#e6edf3" font-size="15" font-weight="650">Array status</text>
+  <rect x="1320" y="100" width="62" height="24" rx="12" fill="#3ecf8e" opacity=".15"/>
+  <text x="1351" y="116" text-anchor="middle" fill="#3ecf8e" font-size="10">HEALTHY</text>
+  <text x="296" y="150" fill="#8b9bab" font-size="12">Parity valid · started · 6 data disks · 1 parity · 1 cache</text>
+  <rect x="296" y="166" width="1082" height="20" rx="5" fill="#0b1015"/>
+  <rect x="296" y="166" width="660" height="20" rx="5" fill="#2dd4bf" opacity=".65"/>
+  <text x="296" y="206" fill="#8b9bab" font-size="11">8.1 TiB used of 13.0 TiB</text>
+  <rect x="296" y="222" width="110" height="30" rx="7" fill="#1b242e" stroke="#27323d"/><text x="351" y="242" text-anchor="middle" fill="#e6edf3" font-size="11">Stop</text>
+  <rect x="414" y="222" width="130" height="30" rx="7" fill="#2dd4bf"/><text x="479" y="242" text-anchor="middle" fill="#06231f" font-size="11" font-weight="700">Parity sync</text>
+  <rect x="552" y="222" width="100" height="30" rx="7" fill="#1b242e" stroke="#27323d"/><text x="602" y="242" text-anchor="middle" fill="#e6edf3" font-size="11">Scrub</text>
+
+  <rect x="272" y="288" width="700" height="340" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="296" y="318" fill="#e6edf3" font-size="14" font-weight="650">Disks</text>
+  <g fill="#8b9bab" font-size="10"><text x="296" y="346">DEVICE</text><text x="470" y="346">ROLE</text><text x="610" y="346">SIZE</text><text x="740" y="346">TEMP</text><text x="850" y="346">SMART</text></g>
+  <g font-size="12" fill="#e6edf3">
+    <text x="296" y="378">/dev/sdb</text><text x="470" y="378">parity</text><text x="610" y="378">4.0 TB</text><text x="740" y="378">38°C</text>
+    <text x="296" y="414">/dev/sdc</text><text x="470" y="414">data</text><text x="610" y="414">4.0 TB</text><text x="740" y="414">41°C</text>
+    <text x="296" y="450">/dev/sdd</text><text x="470" y="450">data</text><text x="610" y="450">4.0 TB</text><text x="740" y="450">47°C</text>
+    <text x="296" y="486">/dev/sde</text><text x="470" y="486">data</text><text x="610" y="486">4.0 TB</text><text x="740" y="486">39°C</text>
+    <text x="296" y="522">/dev/nvme0n1</text><text x="470" y="522">cache</text><text x="610" y="522">1.0 TB</text><text x="740" y="522">52°C</text>
+  </g>
+  <g fill="#3ecf8e" font-size="10"><text x="850" y="378">PASSED</text><text x="850" y="414">PASSED</text><text x="850" y="486">PASSED</text><text x="850" y="522">PASSED</text></g>
+  <text x="850" y="450" fill="#f5b544" font-size="10">WARN</text>
+
+  <rect x="988" y="288" width="414" height="340" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="1010" y="318" fill="#e6edf3" font-size="14" font-weight="650">ZFS datasets</text>
+  <g font-size="12" fill="#e6edf3"><text x="1010" y="352">rpool/ROOT/wrexr</text><text x="1010" y="388">rpool/data/media</text><text x="1010" y="424">rpool/data/vms</text><text x="1010" y="460">rpool/data/backups</text></g>
+  <g font-size="11" fill="#8b9bab"><text x="1010" y="372">lz4 · 18 GiB</text><text x="1010" y="408">lz4 · 4.2 TiB</text><text x="1010" y="444">lz4 · 1.8 TiB</text><text x="1010" y="480">zstd · 620 GiB</text></g>
+  <rect x="1010" y="510" width="130" height="30" rx="7" fill="#1b242e" stroke="#27323d"/>
+  <text x="1075" y="530" text-anchor="middle" fill="#e6edf3" font-size="11">+ Dataset</text>
+  <rect x="1150" y="510" width="130" height="30" rx="7" fill="#1b242e" stroke="#27323d"/>
+  <text x="1215" y="530" text-anchor="middle" fill="#e6edf3" font-size="11">Snapshot</text>
+
+  <rect x="272" y="648" width="1130" height="214" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="296" y="678" fill="#e6edf3" font-size="14" font-weight="650">Snapshots &amp; SMART schedule</text>
+  <g font-size="12" fill="#e6edf3"><text x="296" y="712">rpool/data/media@daily-2026-11-21</text><text x="296" y="748">rpool/data/vms@pre-update</text></g>
+  <g font-size="11" fill="#8b9bab"><text x="760" y="712">Automatic · daily 03:00 · keep 14</text><text x="760" y="748">Manual · 2 hours ago</text></g>
+  <text x="296" y="800" fill="#8b9bab" font-size="11">SMART short tests: weekly Sun 02:00 · Long tests: monthly 1st 02:00 · Trim: enabled</text>
+</svg>

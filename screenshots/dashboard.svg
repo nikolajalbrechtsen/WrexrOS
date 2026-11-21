@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#0d1116"/>
+  <rect width="236" height="900" fill="#10161d"/>
+  <rect x="236" width="1" height="900" fill="#27323d"/>
+  <text x="28" y="52" fill="#e6edf3" font-size="19" font-weight="700">WrexrOS</text>
+  <text x="28" y="70" fill="#8b9bab" font-size="10" letter-spacing="2">HYPERVISOR OS</text>
+  <rect x="16" y="96" width="204" height="40" rx="8" fill="#1b242e"/>
+  <text x="32" y="122" fill="#2dd4bf" font-size="14">▦</text>
+  <text x="54" y="122" fill="#2dd4bf" font-size="14" font-weight="600">Dashboard</text>
+  <g fill="#8b9bab" font-size="14">
+    <text x="54" y="174">▣  Virtual Machines</text><text x="54" y="220">▤  Containers</text>
+    <text x="54" y="266">◈  Storage</text><text x="54" y="312">▧  File Shares</text>
+    <text x="54" y="358">⬡  Docker Apps</text><text x="54" y="404">⚙  Settings</text>
+    <text x="54" y="450">▸  Terminal</text><text x="54" y="496">↻  Updates</text>
+  </g>
+  <text x="28" y="860" fill="#3ecf8e" font-size="11">● Online</text>
+  <text x="28" y="878" fill="#8b9bab" font-size="10">wrexr-node1 · v0.1.0</text>
+
+  <text x="272" y="46" fill="#e6edf3" font-size="22" font-weight="650">Dashboard</text>
+  <text x="272" y="66" fill="#8b9bab" font-size="12">System overview · live · 2s refresh</text>
+  <rect x="1210" y="24" width="190" height="34" rx="8" fill="#151c24" stroke="#27323d"/>
+  <text x="1226" y="46" fill="#8b9bab" font-size="12">⌕  Search everything</text>
+
+  <g>
+    <rect x="272" y="88" width="274" height="128" rx="12" fill="#151c24" stroke="#27323d"/>
+    <text x="292" y="114" fill="#8b9bab" font-size="11" letter-spacing="1">CPU LOAD</text>
+    <text x="292" y="151" fill="#e6edf3" font-size="28" font-weight="700">12.4%</text>
+    <text x="292" y="171" fill="#8b9bab" font-size="11">8 cores · 3.7 GHz</text>
+    <rect x="292" y="188" width="234" height="6" rx="3" fill="#0b1015"/>
+    <rect x="292" y="188" width="29" height="6" rx="3" fill="#2dd4bf"/>
+    <rect x="1198" y="104" width="22" height="22" fill="#4f9cf9" opacity=".25"/>
+
+    <rect x="562" y="88" width="274" height="128" rx="12" fill="#151c24" stroke="#27323d"/>
+    <text x="582" y="114" fill="#8b9bab" font-size="11" letter-spacing="1">MEMORY</text>
+    <text x="582" y="151" fill="#e6edf3" font-size="28" font-weight="700">38.1%</text>
+    <text x="582" y="171" fill="#8b9bab" font-size="11">12.2 / 32.0 GiB</text>
+    <rect x="582" y="188" width="234" height="6" rx="3" fill="#0b1015"/>
+    <rect x="582" y="188" width="89" height="6" rx="3" fill="#2dd4bf"/>
+
+    <rect x="852" y="88" width="274" height="128" rx="12" fill="#151c24" stroke="#27323d"/>
+    <text x="872" y="114" fill="#8b9bab" font-size="11" letter-spacing="1">STORAGE</text>
+    <text x="872" y="151" fill="#e6edf3" font-size="28" font-weight="700">61.0%</text>
+    <text x="872" y="171" fill="#8b9bab" font-size="11">8.1 / 13.0 TiB · parity OK</text>
+    <rect x="872" y="188" width="234" height="6" rx="3" fill="#0b1015"/>
+    <rect x="872" y="188" width="143" height="6" rx="3" fill="#f5b544"/>
+
+    <rect x="1142" y="88" width="260" height="128" rx="12" fill="#151c24" stroke="#27323d"/>
+    <text x="1162" y="114" fill="#8b9bab" font-size="11" letter-spacing="1">NETWORK</text>
+    <text x="1162" y="151" fill="#e6edf3" font-size="28" font-weight="700">1.2 <tspan font-size="14">Mb/s</tspan></text>
+    <text x="1162" y="171" fill="#8b9bab" font-size="11">rx 1.2 · tx 0.8 Mb/s</text>
+    <rect x="1162" y="188" width="220" height="6" rx="3" fill="#0b1015"/>
+    <rect x="1162" y="188" width="46" height="6" rx="3" fill="#4f9cf9"/>
+  </g>
+
+  <rect x="272" y="236" width="700" height="300" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="294" y="266" fill="#e6edf3" font-size="14" font-weight="650">Resource usage</text>
+  <text x="900" y="266" fill="#8b9bab" font-size="11">Last 60 minutes</text>
+  <g stroke="#27323d" stroke-width="1">
+    <line x1="300" y1="310" x2="944" y2="310"/><line x1="300" y1="360" x2="944" y2="360"/>
+    <line x1="300" y1="410" x2="944" y2="410"/><line x1="300" y1="460" x2="944" y2="460"/>
+    <line x1="300" y1="510" x2="944" y2="510"/>
+  </g>
+  <path d="M300 470 C360 450 390 420 440 432 S520 400 560 414 S640 380 690 396 S770 366 820 380 S900 350 944 362"
+        fill="none" stroke="#2dd4bf" stroke-width="2.5"/>
+  <path d="M300 490 C360 480 400 470 440 476 S520 452 560 460 S640 442 690 450 S770 428 820 436 S900 418 944 424"
+        fill="none" stroke="#4f9cf9" stroke-width="2.5" opacity=".8"/>
+  <g fill="#8b9bab" font-size="10"><text x="300" y="526">-60m</text><text x="600" y="526">-30m</text><text x="920" y="526">now</text></g>
+  <circle cx="600" cy="290" r="5" fill="#2dd4bf"/><text x="612" y="294" fill="#2dd4bf" font-size="11">CPU</text>
+  <circle cx="660" cy="290" r="5" fill="#4f9cf9"/><text x="672" y="294" fill="#4f9cf9" font-size="11">RAM</text>
+
+  <rect x="988" y="236" width="414" height="140" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="1010" y="266" fill="#e6edf3" font-size="14" font-weight="650">Array health</text>
+  <rect x="1010" y="280" width="370" height="26" rx="6" fill="#0b1015"/>
+  <rect x="1010" y="280" width="370" height="26" rx="6" fill="#3ecf8e" opacity=".14"/>
+  <text x="1024" y="297" fill="#3ecf8e" font-size="12">● Parity valid · 6 data disks · 1 parity</text>
+  <g fill="#8b9bab" font-size="11">
+    <text x="1010" y="330">Capacity</text><text x="1340" y="330" text-anchor="end">8.1 / 13.0 TiB</text>
+    <text x="1010" y="352">Last sync</text><text x="1340" y="352" text-anchor="end">today 03:12 · 2h 14m</text>
+  </g>
+
+  <rect x="988" y="392" width="414" height="144" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="1010" y="422" fill="#e6edf3" font-size="14" font-weight="650">Recent events</text>
+  <g font-size="11"><text x="1010" y="450" fill="#8b9bab">12:04</text><text x="1068" y="450" fill="#3ecf8e">VM win11 started</text>
+  <text x="1010" y="476" fill="#8b9bab">11:58</text><text x="1068" y="476" fill="#4f9cf9">Share 'media' updated</text>
+  <text x="1010" y="502" fill="#8b9bab">11:41</text><text x="1068" y="502" fill="#f5b544">SMART temp 47°C on sdd</text></g>
+
+  <rect x="272" y="552" width="1130" height="316" rx="12" fill="#151c24" stroke="#27323d"/>
+  <text x="294" y="582" fill="#e6edf3" font-size="14" font-weight="650">Running workloads</text>
+  <text x="1370" y="582" fill="#8b9bab" font-size="11" text-anchor="end">4 VMs · 3 containers · 14 apps</text>
+  <g fill="#8b9bab" font-size="10"><text x="294" y="610">NAME</text><text x="620" y="610">TYPE</text><text x="800" y="610">CPU</text><text x="920" y="610">MEMORY</text><text x="1100" y="610">STATUS</text></g>
+  <g font-size="12" fill="#e6edf3">
+    <text x="294" y="640">win11</text><text x="620" y="640">KVM</text><text x="800" y="640">4 vCPU</text><text x="920" y="640">8.0 GiB</text>
+    <text x="294" y="678">debian-build</text><text x="620" y="678">LXC</text><text x="800" y="678">2 vCPU</text><text x="920" y="678">2.0 GiB</text>
+    <text x="294" y="716">opnsense</text><text x="620" y="716">KVM</text><text x="800" y="716">4 vCPU</text><text x="920" y="716">4.0 GiB</text>
+  </g>
+  <g font-size="10" fill="#3ecf8e"><rect x="1100" y="626" width="62" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1112" y="640">RUNNING</text>
+    <rect x="1100" y="664" width="62" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1112" y="678">RUNNING</text>
+    <rect x="1100" y="702" width="62" height="20" rx="10" fill="#3ecf8e" opacity=".15"/><text x="1112" y="716">RUNNING</text></g>
+</svg>

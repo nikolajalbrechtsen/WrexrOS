@@ -1,0 +1,12 @@
+{
+  "name": "wrexros-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency-free web UI for WrexrOS",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node dev-server.mjs",
+    "preview": "node dev-server.mjs"
+  }
+}
