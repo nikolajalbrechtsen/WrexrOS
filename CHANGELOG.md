@@ -44,6 +44,8 @@ this release establishes the full foundation.
 ### Fixed
 - ISO builder restores executable bits after copying repository content into the chroot tree,
   so live-boot hooks and CLI helpers are executable in the image.
+- Builder image installs `cpio`, required by live-build when assembling the Debian installer
+  initrd; the tagged CI run previously failed with exit 127.
 
 ### Security
 - No default credentials; first boot requires explicit password or SSH key setup.

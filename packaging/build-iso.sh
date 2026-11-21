@@ -73,6 +73,7 @@ clean_build_dir() {
 
 prepare_config() {
   command -v lb >/dev/null || die "live-build (lb) is not installed"
+  command -v cpio >/dev/null || die "cpio is not installed (live-build needs it for the Debian installer initrd)"
   command -v rsync >/dev/null || die "rsync is not installed"
   command -v sha256sum >/dev/null || die "coreutils sha256sum is not installed"
 
