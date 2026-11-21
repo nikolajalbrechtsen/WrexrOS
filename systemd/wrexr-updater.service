@@ -1,0 +1,20 @@
+[Unit]
+Description=WrexrOS daily update check
+Documentation=https://docs.wrexr.io
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/wrexr/updater/wrexr-update.sh --check
+TimeoutStartSec=5min
+Nice=10
+IOSchedulingClass=idle
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+NoNewPrivileges=true
+ReadWritePaths=/var/lib/wrexr /var/cache/wrexr
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "hostname": "wrexr-array",
+  "timezone": "UTC",
+  "keyboardLayout": "us",
+  "filesystem": "zfs",
+  "raid": "raidz1",
+  "swap": true,
+  "swapSize": "4G",
+  "uiPort": 8443,
+  "updateChannel": "stable",
+  "demoMode": false,
+  "force": true,
+  "disks": [
+    { "path": "/dev/sda", "role": "system" },
+    { "path": "/dev/sdb", "role": "parity" },
+    { "path": "/dev/sdc", "role": "data" },
+    { "path": "/dev/sdd", "role": "data" },
+    { "path": "/dev/sde", "role": "data" },
+    { "path": "/dev/nvme0n1", "role": "cache" }
+  ],
+  "network": {
+    "mode": "dhcp",
+    "interface": "eth0",
+    "bridge": "br0",
+    "firewall": { "enabled": true, "allowTcp": [22, 8443, 445, 2049, 21] }
+  },
+  "auth": {
+    "sshKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleReplaceWithYourPublicKey0123456789 admin@wrexr"
+    ]
+  },
+  "users": [
+    { "name": "nas", "groups": ["samba"], "shell": "/usr/sbin/nologin", "sshKeys": ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleReplaceWithYourNasKey0123456789 nas@wrexr"] }
+  ],
+  "shares": [
+    { "name": "media", "protocol": "smb", "path": "/mnt/wrexr/media", "recycle": true, "users": ["nas"] },
+    { "name": "photos", "protocol": "smb", "path": "/mnt/wrexr/photos" },
+    { "name": "nfs-backup", "protocol": "nfs", "path": "/mnt/wrexr/backup", "readOnly": false }
+  ]
+}

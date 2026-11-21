@@ -1,0 +1,15 @@
+[Unit]
+Description=WrexrOS console login banner
+Documentation=https://docs.wrexr.io
+DefaultDependencies=no
+Before=getty@tty1.service serial-getty@.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/env bash /opt/wrexr/boot/wrexr-console.sh --once
+TimeoutStartSec=20
+
+[Install]
+WantedBy=multi-user.target

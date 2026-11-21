@@ -1,0 +1,15 @@
+[Unit]
+Description=WrexrOS first-boot setup marker and TLS certificate
+Documentation=https://docs.wrexr.io
+After=network-online.target local-fs.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/wrexr/setup-complete
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/env bash /opt/wrexr/boot/firstboot.sh
+TimeoutStartSec=60s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "hostname": "wrexr-raid",
+  "timezone": "Europe/Berlin",
+  "keyboardLayout": "de",
+  "filesystem": "zfs",
+  "raid": "raidz1",
+  "swap": true,
+  "swapSize": "8G",
+  "uiPort": 8443,
+  "updateChannel": "stable",
+  "demoMode": false,
+  "force": true,
+  "packageSource": "/cdrom/wrexr/packages",
+  "kernelOptions": ["intel_iommu=on", "iommu=pt"],
+  "disks": [
+    { "path": "/dev/sda", "role": "system" },
+    { "path": "/dev/sdb", "role": "data" },
+    { "path": "/dev/sdc", "role": "data" },
+    { "path": "/dev/sdd", "role": "data" },
+    { "path": "/dev/nvme0n1", "role": "cache" }
+  ],
+  "network": {
+    "mode": "static",
+    "interface": "eth0",
+    "bridge": "br0",
+    "address": "192.168.1.20",
+    "netmask": "255.255.255.0",
+    "gateway": "192.168.1.1",
+    "dns": ["192.168.1.1", "1.1.1.1"],
+    "firewall": { "enabled": true, "allowTcp": [22, 8443, 445, 2049] }
+  },
+  "auth": {
+    "sshKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleReplaceWithYourPublicKey0123456789 admin@wrexr"
+    ]
+  },
+  "users": [
+    { "name": "admin", "groups": ["sudo", "libvirt", "docker"], "shell": "/bin/bash", "sshKeys": ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleReplaceWithYourSecondKey0123456789 second@wrexr"] }
+  ],
+  "shares": [
+    { "name": "media", "protocol": "smb", "path": "/mnt/wrexr/media", "recycle": true, "users": ["admin"] },
+    { "name": "backup", "protocol": "nfs", "path": "/mnt/wrexr/backup", "readOnly": true }
+  ]
+}

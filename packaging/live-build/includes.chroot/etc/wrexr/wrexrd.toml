@@ -1,0 +1,23 @@
+# Default WrexrOS daemon configuration.
+# Installed into the live image; the installer rewrites port/channel/repoUrl
+# from the unattended config or the advanced install wizard.
+
+port = 8443
+tls = true
+basePath = "/api/v1"
+stateDir = "/var/lib/wrexr"
+demoMode = false
+updateChannel = "stable"
+repoUrl = "https://repo.wrexr.io"
+
+[server]
+host = "0.0.0.0"
+# WREXR_INSECURE_HTTP=1 in the environment allows plain HTTP for development.
+insecureHttp = false
+
+[auth]
+sessionTtlSeconds = 28800
+totpRequired = false
+
+[log]
+level = "info"

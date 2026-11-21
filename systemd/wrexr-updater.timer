@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily WrexrOS update check
+Documentation=https://docs.wrexr.io
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+AccuracySec=5min
+Unit=wrexr-updater.service
+
+[Install]
+WantedBy=timers.target

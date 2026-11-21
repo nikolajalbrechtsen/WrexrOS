@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# WrexrOS live-ISO boot hook.
+#
+# Reads the kernel command line written by the isolinux/syslinux menu and starts
+# the matching installer path. Does nothing on an installed system (no
+# wrexr.install= parameter) so it is safe to leave enabled in the image.
+set -Eeuo pipefail
+
+CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
+INSTALL_MODE=""
+CONFIG_SOURCE=""
+
+for arg in $CMDLINE; do
+  case "$arg" in
+    wrexr.install=*) INSTALL_MODE="${arg#wrexr.install=}" ;;
+    wrexr.config=*) CONFIG_SOURCE="${arg#wrexr.config=}" ;;
+  esac
+done
+
+[[ -n "$INSTALL_MODE" ]] || exit 0
+
+INSTALLER="/opt/wrexr/installer/wrexr-installer.sh"
+[[ -x "$INSTALLER" ]] || INSTALLER="/usr/local/bin/wrexr-installer.sh"
+if [[ ! -x "$INSTALLER" ]]; then
+  echo "[wrexr-live-install] installer not found; staying in live session" >&2
+  exit 0
+fi
+
+CONFIG_FILE=""
+if [[ -n "$CONFIG_SOURCE" ]]; then
+  case "$CONFIG_SOURCE" in
+    http://*|https://*|ftp://*)
+      CONFIG_FILE="$(mktemp /tmp/wrexr-install-XXXXXX.json)"
+      echo "[wrexr-live-install] fetching $CONFIG_SOURCE"
+      curl --fail --silent --show-error --location --max-time 60 \
+        "$CONFIG_SOURCE" -o "$CONFIG_FILE"
+      ;;
+    *)
+      CONFIG_FILE="$CONFIG_SOURCE"
+      ;;
+  esac
+  [[ -r "$CONFIG_FILE" ]] || {
+    echo "[wrexr-live-install] config $CONFIG_FILE is not readable" >&2
+    exit 1
+  }
+fi
+
+case "$INSTALL_MODE" in
+  standard)
+    echo "[wrexr-live-install] starting guided standard install"
+    exec "$INSTALLER" --interactive --yes
+    ;;
+  advanced)
+    echo "[wrexr-live-install] starting advanced install"
+    exec "$INSTALLER" --interactive --advanced
+    ;;
+  unattended)
+    [[ -n "$CONFIG_FILE" ]] || {
+      echo "[wrexr-live-install] unattended mode requires wrexr.config=" >&2
+      exit 1
+    }
+    echo "[wrexr-live-install] starting unattended install from $CONFIG_FILE"
+    exec "$INSTALLER" --config "$CONFIG_FILE" --yes
+    ;;
+  *)
+    echo "[wrexr-live-install] unknown mode: $INSTALL_MODE" >&2
+    exit 1
+    ;;
+esac

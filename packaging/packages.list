@@ -1,0 +1,40 @@
+# Packages included in the WrexrOS live image.
+# One package per line; inline comments are stripped by build-iso.sh.
+
+# Virtualisation
+qemu-kvm
+libvirt-daemon-system
+libvirt-clients
+lxc
+docker.io
+
+# Storage and filesystems
+zfsutils-linux
+btrfs-progs
+mdadm
+smartmontools
+
+# File sharing
+samba
+samba-common-bin
+nfs-kernel-server
+vsftpd
+
+# Network, access and base utilities
+openssh-server
+netplan.io
+iptables
+nftables
+openssl
+curl
+ca-certificates
+nodejs
+sudo
+systemd
+chrony
+vim-tiny
+iproute2
+pciutils
+lm-sensors
+rsync
+jq

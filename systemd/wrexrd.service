@@ -1,0 +1,63 @@
+[Unit]
+Description=WrexrOS control daemon (API, WebSocket and orchestration)
+Documentation=https://docs.wrexr.io
+After=network-online.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wrexr
+Group=wrexr
+# Supplementary groups allow talking to libvirt/docker local sockets and /dev/kvm
+# through the sudoers helpers rather than granting the daemon raw device access.
+SupplementaryGroups=kvm libvirt docker
+WorkingDirectory=/opt/wrexr/core
+Environment=NODE_ENV=production
+Environment=WREXR_CONFIG=/etc/wrexr/wrexrd.toml
+Environment=WREXR_STATE_DIR=/var/lib/wrexr
+ExecStartPre=/usr/bin/mkdir -p /run/wrexr /var/lib/wrexr
+ExecStart=/usr/bin/node --experimental-strip-types /opt/wrexr/core/src/index.ts
+Restart=on-failure
+RestartSec=5s
+KillMode=mixed
+TimeoutStopSec=30s
+
+# --- hardening -----------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+UMask=0077
+
+# WrexrOS must persist state, accept settings edits and create runtime sockets.
+# ProtectSystem=strict makes everything else read-only, including /opt/wrexr.
+ReadWritePaths=/var/lib/wrexr /etc/wrexr /run/wrexr
+
+# AF_NETLINK is needed for interface/address discovery (os.networkInterfaces()).
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+
+# Node's JIT needs writable+executable anonymous memory; this is the one deliberate
+# hardening deviation. Keep MemoryDenyWriteExecute=false until Node removes the JIT.
+MemoryDenyWriteExecute=false
+
+# Privileged operations are delegated to NOPASSWD/NOEXEC helpers in 00-wrexr.conf,
+# so the daemon needs no capabilities of its own.
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# Broad syscall class; widen here (with a comment) if a new native addon needs more.
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

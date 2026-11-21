@@ -1,0 +1,21 @@
+[Unit]
+Description=WrexrOS read-only dashboard kiosk (optional)
+Documentation=https://docs.wrexr.io
+After=network-online.target graphical.target
+Wants=network-online.target
+ConditionPathExists=/opt/wrexr/boot/wrexr-console.sh
+
+[Service]
+Type=simple
+User=wrexr
+Group=wrexr
+Environment=WREXR_KIOSK=1
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+ExecStart=/usr/bin/env bash /opt/wrexr/boot/wrexr-console.sh
+Restart=on-failure
+RestartSec=10s
+TimeoutStopSec=15s
+NoNewPrivileges=true
+
+[Install]
+WantedBy=graphical.target

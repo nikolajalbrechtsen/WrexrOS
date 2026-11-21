@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hostname": "wrexr",
+  "timezone": "UTC",
+  "keyboardLayout": "us",
+  "filesystem": "zfs",
+  "raid": "single",
+  "swap": true,
+  "swapSize": "4G",
+  "uiPort": 8443,
+  "updateChannel": "stable",
+  "demoMode": false,
+  "force": true,
+  "disks": [
+    { "path": "/dev/sda", "role": "system" },
+    { "path": "/dev/sdb", "role": "data" }
+  ],
+  "network": {
+    "mode": "dhcp",
+    "interface": "eth0",
+    "bridge": "br0",
+    "firewall": { "enabled": true, "allowTcp": [22, 8443] }
+  },
+  "auth": {
+    "sshKeys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleReplaceWithYourPublicKey0123456789 admin@wrexr"
+    ]
+  }
+}

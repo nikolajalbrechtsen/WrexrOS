@@ -1,0 +1,19 @@
+[Unit]
+Description=WrexrOS first-boot console banner
+Documentation=https://docs.wrexr.io
+DefaultDependencies=no
+After=network-online.target local-fs.target
+Wants=network-online.target
+Before=getty@tty1.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/env bash /opt/wrexr/boot/wrexr-console.sh --once
+StandardOutput=tty
+TTYPath=/dev/tty1
+TimeoutStartSec=20s
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=getty.target
