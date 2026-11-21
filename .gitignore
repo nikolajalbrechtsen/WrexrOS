@@ -1,0 +1,38 @@
+# Build output
+node_modules/
+dist/
+out/
+*.iso
+*.img
+*.qcow2
+*.vdi
+*.vmdk
+
+# State and secrets
+/var/lib/wrexr/
+state/
+*.db
+*.sqlite
+*.pem
+*.key
+*.crt
+.env
+.env.*
+wrexr.toml.local
+
+# Logs and caches
+*.log
+.cache/
+coverage/
+.npm/
+.vite/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Keep placeholder directories
+!**/.gitkeep

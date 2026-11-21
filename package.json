@@ -1,0 +1,23 @@
+{
+  "name": "wrexros",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted hypervisor and parity NAS appliance",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types core/src/index.ts",
+    "dev:web": "node web/dev-server.mjs",
+    "build:web": "node web/build.mjs",
+    "test": "node --experimental-strip-types --test core/tests/*.test.ts cli/tests/*.test.ts",
+    "check:update": "node updater/check-update.mjs --json",
+    "validate:config": "node installer/validate-config.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nikolajalbrechtsen/WrexrOS.git"
+  },
+  "license": "MIT"
+}

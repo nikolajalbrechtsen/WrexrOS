@@ -1,0 +1,132 @@
+name: CI / Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      build_iso:
+        description: 'Build ISO artifact'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wrexros-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  test:
+    name: Unit tests and static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Show versions
+        run: node --version && npm --version
+      - name: Validate unattended examples
+        run: |
+          for f in installer/examples/*.json; do
+            echo "Validating $f"
+            node installer/validate-config.mjs "$f"
+          done
+      - name: Backend tests
+        run: node --experimental-strip-types --test core/tests/*.test.ts
+      - name: CLI tests
+        run: node --experimental-strip-types --test cli/tests/*.test.ts
+      - name: Build web UI
+        run: node web/build.mjs
+      - name: Shell syntax check
+        run: |
+          for f in installer/*.sh installer/functions/*.sh boot/*.sh packaging/*.sh updater/*.sh \
+                   packaging/live-build/includes.chroot/usr/local/bin/wrexr-live-install; do
+            bash -n "$f"
+          done
+      - name: Verify version
+        run: |
+          test -s VERSION
+          node --input-type=module -e "import fs from 'node:fs'; const v=fs.readFileSync('VERSION','utf8').trim(); if(!/^\d+\.\d+\.\d+/.test(v)) process.exit(1); console.log('version',v)"
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+
+  build-iso:
+    name: Build installable ISO
+    runs-on: ubuntu-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+      - name: Build ISO in container
+        run: |
+          mkdir -p out
+          docker build -t wrexros-iso-builder -f packaging/Dockerfile .
+          docker run --rm --privileged \
+            -v "$PWD/out":/build/out \
+            -e WREXR_VERSION="$(cat VERSION)" \
+            wrexros-iso-builder
+      - name: Generate checksums
+        run: |
+          cd out
+          sha256sum *.iso > SHA256SUMS
+          cat SHA256SUMS
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wrexros-iso
+          path: out/*
+
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: [test, build-iso]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: wrexros-iso
+          path: out
+      - name: Verify checksums
+        run: cd out && sha256sum -c SHA256SUMS
+      - name: Sign release assets
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "No signing key configured; publishing unsigned assets."
+            exit 0
+          fi
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          cd out
+          for f in *.iso SHA256SUMS; do
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+              --passphrase-fd 0 --armor --detach-sign --output "$f.asc" "$f"
+          done
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/*.iso
+            out/*.asc
+            out/SHA256SUMS
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
