@@ -11,6 +11,15 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Alert delivery backends (email, webhook, Pushover) and backup replication.
 - Plugin marketplace and localization packs.
 
+## [0.1.1] - 2026-11-22
+
+### Fixed
+- BIOS/legacy ISO boot: ship the Syslinux `menu.c32` and `vesamenu.c32` COM32 modules on the
+  ISO. The 0.1.0 image contained the menu libraries but not the modules themselves, so
+  ISOLINUX dropped to a `boot:` prompt with `Failed to load COM32 file menu.c32`.
+- Builder image now installs `syslinux-common` so the menu modules can be copied into the
+  binary overlay.
+
 ## [0.1.0] - 2026-11-21
 
 First public release. The repository was initialized from an empty canonical repository and
@@ -54,5 +63,6 @@ this release establishes the full foundation.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.
 - Signed update verification; unsigned assets refused when a trust key is installed.
 
-[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.1
 [0.1.0]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.0

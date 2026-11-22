@@ -29,7 +29,7 @@ Errors:
 
 ```bash
 curl -k https://wrexr.local:8443/api/v1/auth/status
-# {"ok":true,"data":{"setupRequired":true,"version":"0.1.0","hostname":"wrexr","channel":"stable"}}
+# {"ok":true,"data":{"setupRequired":true,"version":"0.1.1","hostname":"wrexr","channel":"stable"}}
 
 curl -k -X POST https://wrexr.local:8443/api/v1/auth/setup \
   -H 'Content-Type: application/json' \
@@ -96,7 +96,7 @@ curl -k .../apps/<id>/logs -H "Authorization: Bearer $TOKEN"
 
 ```bash
 curl -k .../updates/check -H "Authorization: Bearer $TOKEN"
-# {"ok":true,"data":{"current":"0.1.0","latest":"0.1.0","updateAvailable":false,...}}
+# {"ok":true,"data":{"current":"0.1.1","latest":"0.1.1","updateAvailable":false,...}}
 ```
 
 ## Errors and permissions

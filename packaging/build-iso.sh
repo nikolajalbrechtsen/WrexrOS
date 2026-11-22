@@ -125,6 +125,15 @@ prepare_config() {
   cp -a "${SCRIPT_DIR}/live-build/includes.chroot/." "${BUILD_DIR}/config/includes.chroot/"
   cp -a "${SCRIPT_DIR}/live-build/includes.binary/." "${BUILD_DIR}/config/includes.binary/"
 
+  # live-build ships the menu libraries but not the menu COM32 modules themselves.
+  # Our isolinux config uses `UI menu.c32`, so copy the modules explicitly.
+  local module src
+  for module in menu.c32 vesamenu.c32; do
+    src="/usr/lib/syslinux/modules/bios/${module}"
+    [[ -f $src ]] || die "syslinux module ${module} is missing; install syslinux-common"
+    install -m 0644 "$src" "${BUILD_DIR}/config/includes.binary/isolinux/${module}"
+  done
+
   rsync -a \
     --exclude '/.git' --exclude '/packaging/build' --exclude '/packaging/out' \
     --exclude '/node_modules' --exclude '*.iso' \

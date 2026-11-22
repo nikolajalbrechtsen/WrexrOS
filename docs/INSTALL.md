@@ -1,6 +1,6 @@
 # Installing WrexrOS
 
-This guide covers the supported installation paths for 0.1.0. All installations are
+This guide covers the supported installation paths for 0.1.1. All installations are
 **destructive on the target disk**; the installer prints every destructive command in
 `--dry-run` mode first.
 
@@ -19,15 +19,15 @@ Optional: extra disks for the parity array, an IOMMU-capable CPU/board for GPU p
 ## 1. Get and verify the image
 
 ```bash
-curl -LO https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v0.1.0/WrexrOS-0.1.0-amd64.iso
-curl -LO https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v0.1.0/SHA256SUMS
+curl -LO https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v0.1.1/WrexrOS-0.1.1-amd64.iso
+curl -LO https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v0.1.1/SHA256SUMS
 sha256sum -c SHA256SUMS
 ```
 
 If `/etc/wrexr/trusted-updates.gpg` is installed, also verify the detached signature:
 
 ```bash
-gpg --verify WrexrOS-0.1.0-amd64.iso.asc WrexrOS-0.1.0-amd64.iso
+gpg --verify WrexrOS-0.1.1-amd64.iso.asc WrexrOS-0.1.1-amd64.iso
 ```
 
 ## 2. Write to USB
@@ -35,7 +35,7 @@ gpg --verify WrexrOS-0.1.0-amd64.iso.asc WrexrOS-0.1.0-amd64.iso
 Linux:
 
 ```bash
-sudo dd if=WrexrOS-0.1.0-amd64.iso of=/dev/sdX bs=4M status=progress conv=fsync
+sudo dd if=WrexrOS-0.1.1-amd64.iso of=/dev/sdX bs=4M status=progress conv=fsync
 ```
 
 Windows: use [Rufus](https://rufus.ie/) in DD image mode or
@@ -131,7 +131,7 @@ installer.
 The console displays:
 
 ```text
-WrexrOS 0.1.0
+WrexrOS 0.1.1
 https://192.168.1.24:8443
 
 wrexros login:

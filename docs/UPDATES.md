@@ -27,7 +27,7 @@ Output:
 
 ```json
 {
-  "current": "0.1.0",
+  "current": "0.1.1",
   "latest": "0.1.1",
   "updateAvailable": true,
   "releaseUrl": "https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.1",
