@@ -56,6 +56,9 @@ All notable changes to WrexrOS are documented here. The format is based on
   downloaded directly and `xz-utils` is installed explicitly. CI now reports container build
   failures as visible annotations, and post-build verification accepts both uppercase and
   lowercase Debian EFI boot paths.
+- The published `WrexrOS-0.1.2-amd64.iso` was verified over HTTP to contain all four boot modes,
+  the required ISOLINUX menu modules, both firmware-aware GRUB menus, and the unattended
+  configuration fallback on the image.
 
 ### Security
 - A trust key installed at `/etc/wrexr/trusted-updates.gpg` still refuses unsigned updates.
