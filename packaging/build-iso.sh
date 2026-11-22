@@ -270,7 +270,7 @@ verify_iso() {
     /isolinux/libutil.c32 \
     /live/vmlinuz \
     /live/initrd.img \
-    /EFI/BOOT/BOOTX64.EFI \
+    /EFI/boot/bootx64.efi \
     /wrexr/autospec.example.json; do
     listing="$(xorriso -indev "$iso" -ls "$path" 2>/dev/null || true)"
     grep -qiF "$(basename -- "$path")" <<<"$listing" || die "ISO is missing ${path}"
