@@ -250,7 +250,7 @@ install_node_runtime() {
 }
 
 verify_iso() {
-  local iso="$1" path listing eltorito
+  local iso="$1" path listing eltorito variant found
   command -v xorriso >/dev/null || die "xorriso is required to verify the ISO"
   log_info "Verifying ISO boot catalog and required files"
 
@@ -262,6 +262,8 @@ verify_iso() {
   grep -qiF '/isolinux/isolinux.bin' <<<"$eltorito" || \
     die "ISO BIOS boot entry does not point to ISOLINUX"
 
+  # live-build bookworm emits /EFI/BOOT/BOOTX64.EFI; newer releases use the
+  # lowercase spelling. Accept either so verification follows the real image.
   for path in \
     /isolinux/isolinux.bin \
     /isolinux/ldlinux.c32 \
@@ -270,10 +272,20 @@ verify_iso() {
     /isolinux/libutil.c32 \
     /live/vmlinuz \
     /live/initrd.img \
-    /EFI/boot/bootx64.efi \
+    /EFI/BOOT/BOOTX64.EFI \
     /wrexr/autospec.example.json; do
-    listing="$(xorriso -indev "$iso" -ls "$path" 2>/dev/null || true)"
-    grep -qiF "$(basename -- "$path")" <<<"$listing" || die "ISO is missing ${path}"
+    found=0
+    for variant in \
+      "$(basename -- "$path")" \
+      "$(basename -- "$path" | tr '[:upper:]' '[:lower:]')" \
+      "$(basename -- "$path" | tr '[:lower:]' '[:upper:]')"; do
+      listing="$(xorriso -indev "$iso" -find / -type f -name "$variant" 2>/dev/null || true)"
+      if [[ -n $listing ]]; then
+        found=1
+        break
+      fi
+    done
+    ((found)) || die "ISO is missing ${path}"
   done
   log_info "ISO boot verification passed"
 }

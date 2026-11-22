@@ -54,8 +54,8 @@ All notable changes to WrexrOS are documented here. The format is based on
 - The dead “Boot existing system” menu entry was replaced with an honest live-shell entry.
 - ISO builds no longer depend on the Nodesource apt repository; the pinned Node 24 runtime is
   downloaded directly and `xz-utils` is installed explicitly. CI now reports container build
-  failures as visible annotations, and post-build verification checks the actual lowercase
-  Debian EFI boot path.
+  failures as visible annotations, and post-build verification accepts both uppercase and
+  lowercase Debian EFI boot paths.
 
 ### Security
 - A trust key installed at `/etc/wrexr/trusted-updates.gpg` still refuses unsigned updates.
