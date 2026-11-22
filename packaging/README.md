@@ -83,19 +83,21 @@ from USB in both UEFI and legacy BIOS mode.
 
 ## Release ISO delivery
 
-When a version tag is published, CI uploads the built ISO to the configured Proxmox host
-automatically after creating the GitHub release. The deployment uses SSH key authentication and
-these repository secrets:
+GitHub-hosted CI runners cannot reach a private Proxmox management network, so ISO delivery is
+performed from a host that can reach the Proxmox SSH port. Use the bundled helper after a release
+is published:
 
-| Secret | Value |
-|---|---|
-| `PROXMOX_HOST` | Proxmox hostname or IP address |
-| `PROXMOX_USER` | SSH user, normally `root` |
-| `PROXMOX_ISO_DIR` | ISO storage directory, normally `/var/lib/vz/template/iso` |
-| `PROXMOX_SSH_KEY` | Private Ed25519 key authorized on the Proxmox host |
+```bash
+export PROXMOX_HOST=192.168.1.114
+export PROXMOX_USER=root
+export PROXMOX_ISO_DIR=/var/lib/vz/template/iso
+export PROXMOX_SSH_KEY=/path/to/wrexros-deploy-ed25519
+scripts/upload-iso-to-proxmox.sh 0.1.6
+```
 
-If any secret is missing, the upload step is skipped and the release still succeeds. The filename
-on the host is `WrexrOS-<version>-amd64.iso`, matching the published GitHub release asset.
+The script downloads the ISO and `SHA256SUMS` from the GitHub release, verifies the checksum,
+copies the ISO into the Proxmox ISO directory and verifies the checksum again on the host. The
+filename on the host is `WrexrOS-<version>-amd64.iso`, matching the published release asset.
 
 ## PXE notes
 
