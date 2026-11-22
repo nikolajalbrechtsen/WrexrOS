@@ -15,7 +15,10 @@ declare -a FSTAB_ENTRIES=()
 disk_mark_tree_unsafe() {
   local cur="${1#/dev/}" depth
   [[ -n $cur ]] || return 0
-  for ((depth = 0; depth < 8 && -n cur; depth += 1)); do
+  for ((depth = 0; depth < 8; depth += 1)); do
+    # Bash arithmetic parses "-n cur" as unary minus on a variable named n,
+    # which aborts under `set -u`. Test the string outside the arithmetic loop.
+    [[ -n $cur ]] || break
     unsafe["$cur"]=1
     cur="$(lsblk -n -o PKNAME "/dev/${cur}" 2>/dev/null | head -n 1 || true)"
     cur="${cur#/dev/}"

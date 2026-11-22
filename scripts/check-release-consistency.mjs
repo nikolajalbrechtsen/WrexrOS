@@ -70,6 +70,15 @@ for (const file of [
 }
 
 try {
+  const disk = read('installer/functions/disk.sh');
+  if (/\(\(.*&&\s*-n\s/.test(disk)) {
+    problems.push('installer/functions/disk.sh uses -n inside arithmetic; this fails under set -u');
+  }
+} catch (error) {
+  problems.push(`cannot read installer/functions/disk.sh: ${error.message}`);
+}
+
+try {
   const build = read('packaging/build-iso.sh');
   if (build.includes('wrexr.install=standard"')) {
     problems.push('packaging/build-iso.sh still sets a global wrexr.install=standard default');

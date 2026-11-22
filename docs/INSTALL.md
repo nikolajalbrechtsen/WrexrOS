@@ -1,6 +1,6 @@
 # Installing WrexrOS
 
-This guide covers the supported installation paths for 0.1.3. All installations are
+This guide covers the supported installation paths for 0.1.4. All installations are
 **destructive on the target disk**; the installer prints every destructive command in
 `--dry-run` mode first.
 
@@ -19,7 +19,7 @@ Optional: extra disks for the parity array, an IOMMU-capable CPU/board for GPU p
 ## 1. Get and verify the image
 
 ```bash
-VERSION=0.1.3
+VERSION=0.1.4
 curl -LO "https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v${VERSION}/WrexrOS-${VERSION}-amd64.iso"
 curl -LO "https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v${VERSION}/SHA256SUMS"
 grep "WrexrOS-${VERSION}-amd64.iso" SHA256SUMS | sha256sum -c -
@@ -156,7 +156,7 @@ network-online is reached.
 The console displays:
 
 ```text
-WrexrOS 0.1.3
+WrexrOS 0.1.4
 https://192.168.1.24:8443
 
 wrexros login:
@@ -183,7 +183,7 @@ Copy the ISO to the Proxmox host directly rather than relying on USB passthrough
 
 ```bash
 cd /var/lib/vz/template/iso
-VERSION=0.1.3
+VERSION=0.1.4
 wget -O "WrexrOS-${VERSION}-amd64.iso" \
   "https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v${VERSION}/WrexrOS-${VERSION}-amd64.iso"
 wget -O SHA256SUMS \
@@ -213,6 +213,7 @@ Use `ide2` for the ISO and the `;` separator in `--boot order=...`; Proxmox does
 | No IP in banner | Check cable/link, then `ip a`; set static IP in the wizard |
 | Browser certificate warning | Expected on first boot; install your own cert |
 | `wrexrd` fails in the live installer | Expected in 0.1.2; resolved in 0.1.3, where the live image starts only the installer |
+| Installer exits with `n: unbound variable` | Fixed in 0.1.4; update the media and retry the install |
 | `wrexrd` fails after installation | `journalctl -u wrexrd -xe`; check `/etc/wrexr/wrexrd.toml` |
 | ZFS pool missing after reboot | `zpool import`; verify disk role assignment |
 | Installer refuses a disk | Disk is mounted, too small, or marked `wipe:false`; inspect `lsblk -f` |

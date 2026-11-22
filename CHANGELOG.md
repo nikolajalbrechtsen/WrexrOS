@@ -11,6 +11,15 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Alert delivery backends (email, webhook, Pushover) and backup replication.
 - Plugin marketplace and localization packs.
 
+## [0.1.4] - 2026-11-22
+
+### Fixed
+- Standard and Advanced installs no longer abort immediately at the disk-selection prompt with
+  `disk.sh: line 18: n: unbound variable`. The loop used `-n cur` inside Bash arithmetic, which
+  Bash parses as unary minus on a variable named `n` and which fails under `set -u`.
+- Release consistency checks now reject `-n` inside arithmetic expressions in installer shell
+  code, so this class of failure cannot reach another image.
+
 ## [0.1.3] - 2026-11-22
 
 ### Fixed
@@ -133,7 +142,8 @@ this release establishes the full foundation.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.
 - Signed update verification; unsigned assets refused when a trust key is installed.
 
-[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.4
 [0.1.3]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.3
 [0.1.2]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.2
 [0.1.1]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.1

@@ -6,7 +6,7 @@ set -Eeuo pipefail
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Prefer the version stamped next to the installer (/opt/wrexr/VERSION in the ISO),
 # then the installed system version, then a conservative fallback.
-readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.3)}"
+readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.4)}"
 readonly TARGET="${WREXR_TARGET:-/target}"
 readonly VALIDATOR="${SCRIPT_DIR}/validate-config.mjs"
 readonly SCHEMA="${SCRIPT_DIR}/unattended.schema.json"
