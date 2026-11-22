@@ -64,7 +64,7 @@
     },
     "updateChannel": {
       "type": "string",
-      "enum": ["stable", "testing"],
+      "enum": ["stable", "beta"],
       "default": "stable"
     },
     "repoUrl": {
@@ -84,7 +84,7 @@
     "packageSource": {
       "type": "string",
       "pattern": "^/[A-Za-z0-9._/-]+$",
-      "default": "/cdrom/wrexr/packages"
+      "default": "/run/live/medium/wrexr/packages"
     },
     "kernelOptions": {
       "type": "array",
@@ -137,8 +137,9 @@
         },
         "interface": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9_.:-]{1,32}$",
-          "default": "eth0"
+          "pattern": "^(auto|[A-Za-z0-9_.:-]{1,32})$",
+          "default": "auto",
+          "description": "Management NIC. Use 'auto' to detect the first physical interface."
         },
         "bridge": {
           "type": "string",
@@ -175,6 +176,7 @@
             },
             "allowTcp": {
               "type": "array",
+              "description": "Inbound TCP ports; defaults to 22 and the configured uiPort.",
               "default": [22, 8443],
               "items": {
                 "type": "integer",
@@ -210,6 +212,7 @@
           "type": "string",
           "minLength": 12,
           "maxLength": 256,
+          "pattern": "^[^:\\r\\n]+$",
           "sensitive": true,
           "description": "Initial root password. Never commit it to a public repository."
         },
@@ -262,6 +265,7 @@
             "type": "string",
             "minLength": 12,
             "maxLength": 256,
+            "pattern": "^[^:\\r\\n]+$",
             "sensitive": true
           }
         }

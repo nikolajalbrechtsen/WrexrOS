@@ -176,7 +176,7 @@ async function main() {
     if (!chosen.tag) throw new Error('no release tag found in GitHub response');
     const result = {
       current,
-      latest: chosen.tag,
+      latest: chosen.version,
       updateAvailable: compareSemver(chosen.version, current) > 0,
       releaseUrl: chosen.releaseUrl,
       publishedAt: chosen.publishedAt,

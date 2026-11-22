@@ -52,10 +52,8 @@ jobs:
                    packaging/live-build/includes.chroot/usr/local/bin/wrexr-live-install; do
             bash -n "$f"
           done
-      - name: Verify version
-        run: |
-          test -s VERSION
-          node --input-type=module -e "import fs from 'node:fs'; const v=fs.readFileSync('VERSION','utf8').trim(); if(!/^\d+\.\d+\.\d+/.test(v)) process.exit(1); console.log('version',v)"
+      - name: Verify release version consistency
+        run: node scripts/check-release-consistency.mjs
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
@@ -79,12 +77,28 @@ jobs:
             -v "$PWD/out":/build/out \
             -e WREXR_VERSION="$(cat VERSION)" \
             wrexros-iso-builder
+      - name: Download web UI build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+      - name: Build code bundle for in-place updater
+        run: |
+          VERSION="$(cat VERSION)"
+          stage="$(mktemp -d)"
+          mkdir -p "$stage/WrexrOS-${VERSION}"
+          tar --exclude=./.git --exclude=./out --exclude=./node_modules \
+              --exclude=./packaging/build -cf - . \
+            | tar -xf - -C "$stage/WrexrOS-${VERSION}"
+          tar -czf "out/WrexrOS-${VERSION}-linux-amd64.tar.gz" \
+              -C "$stage" "WrexrOS-${VERSION}"
+          rm -rf "$stage"
       - name: Generate checksums
         run: |
           cd out
           # The container writes SHA256SUMS as root; remove it before regenerating.
           sudo rm -f SHA256SUMS
-          sha256sum *.iso > SHA256SUMS
+          sha256sum *.iso *.tar.gz > SHA256SUMS
           cat SHA256SUMS
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
@@ -103,6 +117,10 @@ jobs:
         with:
           name: wrexros-iso
           path: out
+      - name: Verify tag matches VERSION
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/check-release-consistency.mjs
       - name: Verify checksums
         run: cd out && sha256sum -c SHA256SUMS
       - name: Sign release assets
@@ -116,7 +134,7 @@ jobs:
           fi
           echo "$GPG_PRIVATE_KEY" | gpg --batch --import
           cd out
-          for f in *.iso SHA256SUMS; do
+          for f in *.iso *.tar.gz SHA256SUMS; do
             echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
               --passphrase-fd 0 --armor --detach-sign --output "$f.asc" "$f"
           done
@@ -125,6 +143,7 @@ jobs:
         with:
           files: |
             out/*.iso
+            out/*.tar.gz
             out/*.asc
             out/SHA256SUMS
           generate_release_notes: true

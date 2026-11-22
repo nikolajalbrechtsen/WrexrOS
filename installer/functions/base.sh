@@ -2,22 +2,53 @@
 # Sourced by wrexr-installer.sh. Uses the framework functions from the main script.
 
 base_debootstrap() {
-  local includes="ca-certificates,apt,systemd-sysv,iproute2,iputils-ping,kmod,udev,openssh-server,nftables,chrony,curl,wget,sudo,jq,openssl,vim-tiny,rsync,procps,less"
+  local includes="ca-certificates,apt,systemd-sysv,iproute2,iputils-ping,kmod,udev,openssh-server,nftables,chrony,curl,wget,sudo,jq,openssl,vim-tiny,rsync,procps,less,linux-image-amd64,initramfs-tools,grub-common,grub2-common,os-prober,grub-pc-bin,grub-efi-amd64-bin,efibootmgr,ifupdown,bridge-utils,isc-dhcp-client,resolvconf,dosfstools,tzdata,console-setup,e2fsprogs,mdadm,xz-utils"
   case "$CFG_FS" in
-    zfs) includes+=",zfsutils-linux,zfs-initramfs,dosfstools" ;;
+    zfs) includes+=",zfsutils-linux,zfs-initramfs" ;;
     btrfs) includes+=",btrfs-progs" ;;
   esac
   log_info "Running debootstrap bookworm (components: main,contrib,non-free)"
   run env DEBIAN_FRONTEND=noninteractive debootstrap \
     --arch=amd64 \
-    --components=main,contrib,non-free \
+    --components=main,contrib,non-free,non-free-firmware \
     --include="$includes" \
     bookworm "$TARGET" "${DEBIAN_MIRROR:-http://deb.debian.org/debian}"
 }
 
+mount_target_api_fs() {
+  ((TARGET_API_MOUNTED)) && return 0
+  log_info "Mounting /dev, /proc, /sys and /run in the target chroot"
+  run mkdir -p "$TARGET/dev" "$TARGET/proc" "$TARGET/sys" "$TARGET/run"
+  run mount --rbind /dev "$TARGET/dev"
+  run mount --make-rslave "$TARGET/dev" 2>/dev/null || true
+  run mount -t proc proc "$TARGET/proc"
+  run mount -t sysfs sysfs "$TARGET/sys"
+  run mount --rbind /run "$TARGET/run"
+  run mount --make-rslave "$TARGET/run" 2>/dev/null || true
+  TARGET_API_MOUNTED=1
+}
+
+install_node_runtime_target() {
+  local version="24.22.3"
+  local archive="${SCRIPT_DIR}/../runtime/node-v${version}-linux-x64.tar.xz"
+  [[ -f $archive ]] || archive="${TARGET}/opt/wrexr/runtime/node-v${version}-linux-x64.tar.xz"
+  [[ -f $archive ]] || die "Node.js runtime archive is missing from the installation media: ${archive}"
+  log_info "Installing Node.js ${version} runtime in the target system"
+  run mkdir -p "$TARGET/opt/wrexr-node" "$TARGET/usr/local/bin"
+  if ((!DRY_RUN)); then
+    rm -rf -- "$TARGET/opt/wrexr-node"
+    mkdir -p "$TARGET/opt/wrexr-node"
+  fi
+  run tar -xJf "$archive" -C "$TARGET/opt/wrexr-node" --strip-components=1
+  local bin
+  for bin in node npm npx corepack; do
+    run ln -sfn "/opt/wrexr-node/bin/${bin}" "${TARGET}/usr/local/bin/${bin}"
+  done
+}
+
 base_copy_packages() {
   local src="$CFG_PKG_SRC" alt deb count=0
-  for alt in /run/wrexr/packages /opt/wrexr/packages "${SCRIPT_DIR}/../packages"; do
+  for alt in /cdrom/wrexr/packages /run/wrexr/packages /opt/wrexr/packages "${SCRIPT_DIR}/../packages"; do
     [[ -d $src ]] && break
     [[ -d $alt ]] && src="$alt"
   done
@@ -135,6 +166,8 @@ write_daemon_toml() {
     '' \
     "port = ${CFG_UI_PORT}" \
     'tls = true' \
+    'tlsCert = "/var/lib/wrexr/tls/cert.pem"' \
+    'tlsKey = "/var/lib/wrexr/tls/key.pem"' \
     'basePath = "/api/v1"' \
     'stateDir = "/var/lib/wrexr"' \
     "demoMode = ${CFG_DEMO}" \
@@ -152,6 +185,7 @@ set_root_password() {
     log_info "No root password configured; SSH key authentication only"
     return 0
   fi
+  [[ $AUTH_PASSWORD != *:* && $AUTH_PASSWORD != *$'\n'* ]] || die "root password contains an invalid character"
   if ((DRY_RUN)); then
     printf '  [dry-run] printf "root:<redacted>\\n" | chroot %q chpasswd\n' "$TARGET"
     return 0
@@ -164,24 +198,29 @@ install_ssh_keys() {
   if ((${#AUTH_SSH_KEYS[@]} == 0)); then return 0; fi
   log_info "Installing ${#AUTH_SSH_KEYS[@]} authorized key(s) for root"
   write_file "$TARGET/root/.ssh/authorized_keys" "$(printf '%s\n' "${AUTH_SSH_KEYS[@]}")" 600
+  run chown -R root:root "$TARGET/root/.ssh"
 }
 
 configure_users() {
-  local row name groups shell keys key_content
+  local row name groups shell keys password key_content
   for row in "${USER_ROWS[@]}"; do
-    IFS=$'\t' read -r name groups shell keys <<< "$row"
+    IFS=$'\t' read -r name groups shell keys password <<< "$row"
     [[ -n $name ]] || continue
     log_info "Creating local user ${name}"
     chroot_script "create user ${name}" \
       "WREXR_USER=${name}" \
       "WREXR_GROUPS=${groups//|/,}" \
-      "WREXR_SHELL=${shell:-/bin/bash}" <<'EOS'
+      "WREXR_SHELL=${shell:-/bin/bash}" \
+      "WREXR_PASSWORD=${password}" <<'EOS'
 set -e
 if ! id -u "$WREXR_USER" >/dev/null 2>&1; then
   useradd -m -s "$WREXR_SHELL" "$WREXR_USER"
 fi
 if [ -n "$WREXR_GROUPS" ]; then
   usermod -aG "$WREXR_GROUPS" "$WREXR_USER"
+fi
+if [ -n "$WREXR_PASSWORD" ]; then
+  printf '%s:%s\n' "$WREXR_USER" "$WREXR_PASSWORD" | chpasswd
 fi
 install -d -m 0700 -o "$WREXR_USER" -g "$WREXR_USER" "/home/$WREXR_USER/.ssh"
 EOS
@@ -206,7 +245,7 @@ for group in kvm libvirt docker; do
   usermod -aG "$group" wrexr
 done
 install -d -o wrexr -g wrexr -m 0750 /var/lib/wrexr /run/wrexr /var/log/wrexr
-install -d -o wrexr -g wrexr -m 0700 /etc/wrexr/tls
+install -d -o wrexr -g wrexr -m 0700 /var/lib/wrexr/tls
 EOS
 }
 
@@ -227,7 +266,8 @@ base_install_units() {
 
 enable_services() {
   local svc
-  local -a services=(wrexrd wrexr-console wrexr-updater.timer wrexr-firstboot.service nftables chrony)
+  local -a services=(wrexrd wrexr-console wrexr-updater.timer wrexr-firstboot.service chrony)
+  [[ $FW_ENABLED == true ]] && services+=(nftables)
   [[ $CFG_FS == zfs ]] && services+=(zfs-mount.service zfs-share.service)
   for svc in "${services[@]}"; do
     if ((DRY_RUN)); then
@@ -260,6 +300,7 @@ base_configure() {
   install_ssh_keys
   configure_users
 
+  [[ -e /usr/share/zoneinfo/${CFG_TIMEZONE} ]] || die "unknown timezone: ${CFG_TIMEZONE}"
   run ln -sfn "/usr/share/zoneinfo/${CFG_TIMEZONE}" "$TARGET/etc/localtime"
   write_file "$TARGET/etc/timezone" "$CFG_TIMEZONE" 644
   write_file "$TARGET/etc/default/keyboard" "$(printf '%s\n' \
@@ -267,18 +308,31 @@ base_configure() {
     'BACKSPACE="guess"')" 644
   write_file "$TARGET/etc/default/locale" 'LANG=C.UTF-8' 644
 
-  local ssh_password_auth="yes"
-  ((${#AUTH_SSH_KEYS[@]} > 0)) && ssh_password_auth="no"
+  local ssh_password_auth="no" permit_root="prohibit-password"
+  if [[ -z $AUTH_PASSWORD ]]; then
+    ((${#AUTH_SSH_KEYS[@]} > 0)) || die "auth requires a root password or at least one SSH key"
+  else
+    ssh_password_auth="yes"
+    ((${#AUTH_SSH_KEYS[@]} > 0)) || permit_root="yes"
+  fi
   write_file "$TARGET/etc/ssh/sshd_config.d/10-wrexr.conf" "$(printf '%s\n' \
     '# Managed by wrexr-installer.sh' \
-    'PermitRootLogin prohibit-password' \
+    "PermitRootLogin ${permit_root}" \
     "PasswordAuthentication ${ssh_password_auth}" \
     'X11Forwarding no')" 644
 
-  chroot_script "final system configuration" <<'EOS'
+  chroot_script "final system configuration" \
+    "WREXR_TIMEZONE=${CFG_TIMEZONE}" \
+    "WREXR_KEYBOARD=${CFG_KEYBOARD}" <<'EOS'
 set -e
 if command -v update-ca-certificates >/dev/null 2>&1; then update-ca-certificates >/dev/null; fi
 if command -v depmod >/dev/null 2>&1; then depmod -a; fi
+if [ -e "/usr/share/zoneinfo/$WREXR_TIMEZONE" ]; then
+  ln -sfn "/usr/share/zoneinfo/$WREXR_TIMEZONE" /etc/localtime
+  echo "$WREXR_TIMEZONE" > /etc/timezone
+  dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1 || true
+fi
+if command -v setupcon >/dev/null 2>&1; then setupcon --save-only >/dev/null 2>&1 || true; fi
 EOS
 
   enable_services

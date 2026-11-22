@@ -1,6 +1,6 @@
 # WrexrOS architecture
 
-This document describes the 0.1.1 design. It is intentionally concrete: paths, processes,
+This document describes the 0.1.2 design. It is intentionally concrete: paths, processes,
 protocols and failure boundaries are specified so contributors can reason about the system
 without guessing.
 
@@ -43,7 +43,7 @@ root (boot only)
  ├─ wrexr-console.service   writes /etc/issue.d, may start kiosk browser
  ├─ wrexrd.service          User=wrexr, Group=wrexr
  │    ├─ SQLite: /var/lib/wrexr/wrexr.db  (mode 0640)
- │    ├─ TLS key: /etc/wrexr/tls/key.pem  (mode 0600, group wrexr)
+ │    ├─ TLS key: /var/lib/wrexr/tls/key.pem  (mode 0600, group wrexr)
  │    └─ sudo helper calls (narrow allowlist, systemd/sudoers)
  └─ privileged helpers: virsh, lxc, docker, zpool, zfs, smartctl, smbcontrol, ip, netplan
 ```
@@ -54,7 +54,8 @@ fixed argument shapes. The daemon itself additionally allowlists commands and al
 
 ## 4. State and configuration
 
-* `/etc/wrexr/wrexrd.toml` — daemon config (port, TLS paths, state dir, channel, repo).
+* `/etc/wrexr/wrexrd.toml` — daemon startup config (port, TLS paths, state dir, channel, repo),
+  read via `WREXR_CONFIG`; settings changed in the UI are stored separately in `wrexr.db`.
 * `/etc/wrexr/install-state.json` — installer decisions (disks, roles, filesystem, network).
 * `/var/lib/wrexr/wrexr.db` — SQLite state: users, sessions, tokens, audit, events, VMs,
   containers, shares, ACLs, apps, repos, disks, array membership, datasets, snapshots,
@@ -141,4 +142,4 @@ UI (VM create form)
 ## 10. Roadmap boundaries
 
 HA failover and multi-node clustering are prepared in the data model (`cluster_nodes`,
-replication jobs) but not a 0.1.1 guarantee. See `docs/ROADMAP.md`.
+replication jobs) but not a 0.1.2 guarantee. See `docs/ROADMAP.md`.

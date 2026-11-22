@@ -27,7 +27,7 @@ sudo systemctl enable --now wrexrd wrexr-console wrexr-updater.timer
 
 * `ProtectSystem=strict` makes the whole filesystem read-only except
   `/var/lib/wrexr`, `/etc/wrexr` and `/run/wrexr`. The TLS private key under
-  `/etc/wrexr/tls` is readable by the daemon but settings changes are explicit.
+  `/var/lib/wrexr/tls` is readable by the daemon but settings changes are explicit.
 * `CapabilityBoundingSet=` is empty and all privileged work is delegated through
   `00-wrexr.conf` (`NOPASSWD` + `NOEXEC`, explicit command allow-lists).
 * `MemoryDenyWriteExecute=false` is a deliberate deviation: Node's JIT needs

@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # WrexrOS live-ISO boot hook.
 #
-# Reads the kernel command line written by the isolinux/syslinux menu and starts
-# the matching installer path. Does nothing on an installed system (no
-# wrexr.install= parameter) so it is safe to leave enabled in the image.
+# Reads the kernel command line written by the ISOLINUX or GRUB menu and starts
+# the matching installer path. Every menu entry states wrexr.install= explicitly;
+# an empty value keeps the session in live/rescue mode.
 set -Eeuo pipefail
 
 CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
 INSTALL_MODE=""
 CONFIG_SOURCE=""
 
+# Last value wins. Menus append an explicit value (including an empty one for
+# live/rescue mode), so this also neutralises any inherited image default.
 for arg in $CMDLINE; do
   case "$arg" in
     wrexr.install=*) INSTALL_MODE="${arg#wrexr.install=}" ;;
@@ -20,7 +22,6 @@ done
 [[ -n "$INSTALL_MODE" ]] || exit 0
 
 INSTALLER="/opt/wrexr/installer/wrexr-installer.sh"
-[[ -x "$INSTALLER" ]] || INSTALLER="/usr/local/bin/wrexr-installer.sh"
 if [[ ! -x "$INSTALLER" ]]; then
   echo "[wrexr-live-install] installer not found; staying in live session" >&2
   exit 0
@@ -36,7 +37,27 @@ if [[ -n "$CONFIG_SOURCE" ]]; then
         "$CONFIG_SOURCE" -o "$CONFIG_FILE"
       ;;
     *)
-      CONFIG_FILE="$CONFIG_SOURCE"
+      # ISO9660/vfat files are often 0644. The validator requires 0600 when a
+      # config contains a password, so always copy local configs to a safe path.
+      if [[ ! -r $CONFIG_SOURCE && $(basename -- "$CONFIG_SOURCE") == autospec.json ]]; then
+        candidate=""
+        for candidate in \
+          /run/live/medium/wrexr/autospec.json \
+          /cdrom/wrexr/autospec.json \
+          /media/*/wrexr/autospec.json \
+          /autospec.json; do
+          [[ -r $candidate ]] || continue
+          CONFIG_SOURCE="$candidate"
+          break
+        done
+      fi
+      [[ -r "$CONFIG_SOURCE" ]] || {
+        echo "[wrexr-live-install] config $CONFIG_SOURCE is not readable" >&2
+        exit 1
+      }
+      CONFIG_FILE="$(mktemp /tmp/wrexr-install-XXXXXX.json)"
+      cp -- "$CONFIG_SOURCE" "$CONFIG_FILE"
+      chmod 0600 "$CONFIG_FILE"
       ;;
   esac
   [[ -r "$CONFIG_FILE" ]] || {
@@ -48,7 +69,7 @@ fi
 case "$INSTALL_MODE" in
   standard)
     echo "[wrexr-live-install] starting guided standard install"
-    exec "$INSTALLER" --interactive --yes
+    exec "$INSTALLER" --interactive
     ;;
   advanced)
     echo "[wrexr-live-install] starting advanced install"

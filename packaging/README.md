@@ -34,7 +34,7 @@ The script refuses to run as root unless `--allow-root` is given or
 ./packaging/build-iso.sh --output /srv/iso --allow-root
 ```
 
-The version is read from the repository root `VERSION` file (fallback: `1.0.0`,
+The version is read from the repository root `VERSION` file (fallback: `0.1.2`,
 override with `WREXR_VERSION`). Results:
 
 ```
@@ -56,18 +56,17 @@ Verify with `sha256sum -c SHA256SUMS`.
 
 ## Boot menu and installation
 
-The ISO menu offers Standard install, Advanced install, Unattended install
-(expects `/cdrom/wrexr/autospec.json`), Rescue shell, Boot existing system and
-Try without installing. Menu choices pass `wrexr.install=` and, for unattended
-installs, `wrexr.config=` on the kernel command line. The
-`wrexr-live-install.service` unit consumes those parameters, fetches HTTP(S)
-config URLs and starts the matching installer path automatically. After booting,
-you can also run manually:
+The ISOLINUX and GRUB menus offer Standard install, Advanced install, Unattended install
+(expects `/run/live/medium/wrexr/autospec.json`), Rescue shell, Boot existing system and
+Try without installing. Every menu choice passes `wrexr.install=` explicitly; an empty value
+disables autostart. Unattended entries also pass `wrexr.config=`. The
+`wrexr-live-install.service` unit consumes those parameters, fetches HTTP(S) config URLs and
+starts the matching installer path automatically. After booting, you can also run manually:
 
 ```bash
 sudo /opt/wrexr/installer/wrexr-installer.sh --interactive
 sudo /opt/wrexr/installer/wrexr-installer.sh --config installer/examples/unattended-standard.json --yes
-sudo /opt/wrexr/installer/wrexr-installer.sh --config /cdrom/wrexr/autospec.json --dry-run --yes
+sudo /opt/wrexr/installer/wrexr-installer.sh --config /run/live/medium/wrexr/autospec.json --dry-run --yes
 ```
 
 The management UI is on `https://<management-ip>:8443/` by default.
@@ -99,8 +98,11 @@ APPEND initrd=wrexr/initrd.img boot=live components quiet splash fetch=http://px
 
 ## Caveats
 
-* The Debian `nodejs` package may be older than Node 24; the Docker builder
-  installs Node 24 from NodeSource. For bare-metal builds, add NodeSource first
-  if you need `--experimental-strip-types` on the installed system.
-* Locally built `.deb` files are copied to `/cdrom/wrexr/packages` on the ISO and
-  installed by the installer when present.
+* Debian bookworm ships Node 18, so the builder embeds a checksum-verified Node 24 runtime in
+  `/opt/wrexr-node` and `/opt/wrexr/runtime`. The installer copies it into the installed
+  system and `/usr/local/bin/node` points at it. Bare-metal builds need `curl` and `xz-utils`
+  to fetch and unpack that runtime.
+* Secure Boot should be disabled during installation and first boot unless you enrol the
+  signing keys for your firmware. The installed system uses standard Debian GRUB packages.
+* Locally built `.deb` files are copied to `/wrexr/packages` on the ISO (reachable as
+  `/run/live/medium/wrexr/packages`) and installed by the installer when present.

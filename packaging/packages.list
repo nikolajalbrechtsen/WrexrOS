@@ -13,6 +13,10 @@ zfsutils-linux
 btrfs-progs
 mdadm
 smartmontools
+dosfstools
+gdisk
+parted
+debootstrap
 
 # File sharing
 samba
@@ -22,13 +26,11 @@ vsftpd
 
 # Network, access and base utilities
 openssh-server
-netplan.io
 iptables
 nftables
 openssl
 curl
 ca-certificates
-nodejs
 sudo
 systemd
 chrony
@@ -38,3 +40,9 @@ pciutils
 lm-sensors
 rsync
 jq
+bridge-utils
+isc-dhcp-client
+resolvconf
+tzdata
+console-setup
+xz-utils

@@ -5,9 +5,10 @@ set -Eeuo pipefail
 
 readonly STATE_DIR="${WREXR_STATE_DIR:-/var/lib/wrexr}"
 readonly MARKER="${STATE_DIR}/setup-complete"
-readonly TLS_DIR="${WREXR_TLS_DIR:-/etc/wrexr/tls}"
-readonly KEY_FILE="${TLS_DIR}/wrexr.key"
-readonly CRT_FILE="${TLS_DIR}/wrexr.crt"
+# Align with core/src/config.ts defaults so wrexrd uses this certificate.
+readonly TLS_DIR="${WREXR_TLS_DIR:-${STATE_DIR}/tls}"
+readonly KEY_FILE="${WREXR_TLS_KEY:-${TLS_DIR}/key.pem}"
+readonly CRT_FILE="${WREXR_TLS_CERT:-${TLS_DIR}/cert.pem}"
 readonly CONSOLE="${WREXR_CONSOLE_SCRIPT:-/opt/wrexr/boot/wrexr-console.sh}"
 
 log_info() { printf '[ wrexr ] %s\n' "$*" >&2; }
@@ -37,9 +38,17 @@ management_ip() {
 }
 
 generate_tls() {
-  local host ip san
+  local host ip san legacy_key="/etc/wrexr/tls/wrexr.key" legacy_crt="/etc/wrexr/tls/wrexr.crt"
   host="$(hostname -s 2>/dev/null || printf 'wrexr')"
   ip="$(management_ip)"
+
+  # Migrate certificates from the 0.1.x location when upgrading in place.
+  if [[ ! -s $KEY_FILE && ! -s $CRT_FILE && -s $legacy_key && -s $legacy_crt ]]; then
+    mkdir -p "$TLS_DIR"
+    cp "$legacy_key" "$KEY_FILE"
+    cp "$legacy_crt" "$CRT_FILE"
+    log_info "Migrated TLS certificate from ${legacy_crt} to ${CRT_FILE}"
+  fi
 
   if [[ -s $KEY_FILE && -s $CRT_FILE ]]; then
     log_info "TLS certificate already present at ${CRT_FILE}"

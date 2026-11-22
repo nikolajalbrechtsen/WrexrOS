@@ -1,10 +1,12 @@
 /**
  * WrexrOS configuration.
  *
- * Everything is configurable through WREXR_* environment variables. Values may
- * also live in <stateDir>/config.json; environment variables always win.  This
- * module deliberately has no dependencies on other project modules so it can
- * be imported by the logger and the database layer without creating cycles.
+ * Everything is configurable through WREXR_* environment variables. Startup
+ * values may also live in the file named by WREXR_CONFIG (the installer writes
+ * /etc/wrexr/wrexrd.toml); legacy <stateDir>/config.json is read as a fallback.
+ * Precedence is: explicit argument > environment > WREXR_CONFIG > config.json.
+ * This module deliberately has no dependencies on other project modules so it
+ * can be imported by the logger and the database layer without creating cycles.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -68,31 +70,135 @@ function firstIp(): string {
   return '127.0.0.1';
 }
 
+function parseScalar(value: string): unknown {
+  const text = value.trim();
+  if (
+    (text.startsWith('"') && text.endsWith('"')) ||
+    (text.startsWith("'") && text.endsWith("'"))
+  ) {
+    return text.slice(1, -1);
+  }
+  if (text === 'true') return true;
+  if (text === 'false') return false;
+  const numeric = Number(text);
+  return text !== '' && Number.isFinite(numeric) ? numeric : text;
+}
+
+/** Minimal TOML reader for the installer-generated startup config (no comments inside quotes). */
+function readTomlConfig(file: string | undefined): Record<string, unknown> {
+  if (!file) return {};
+  try {
+    const out: Record<string, unknown> = {};
+    let section = '';
+    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+      let clean = '';
+      let quote: string | null = null;
+      for (const ch of line) {
+        if (quote) {
+          clean += ch;
+          if (ch === quote) quote = null;
+          continue;
+        }
+        if (ch === '"' || ch === "'") {
+          quote = ch;
+          clean += ch;
+          continue;
+        }
+        if (ch === '#') break;
+        clean += ch;
+      }
+      const trimmed = clean.trim();
+      if (!trimmed) continue;
+      const sectionMatch = /^\[([^\]]+)\]$/.exec(trimmed);
+      if (sectionMatch) {
+        section = sectionMatch[1].trim();
+        continue;
+      }
+      const pair = /^([A-Za-z][A-Za-z0-9_-]*)\s*=\s*(.+)$/.exec(trimmed);
+      if (pair) out[section ? `${section}.${pair[1]}` : pair[1]] = parseScalar(pair[2]);
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Map installer TOML names onto Config keys. */
+function mapTomlConfig(toml: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(toml)) {
+    switch (key) {
+      case 'port':
+        if (typeof value === 'string' || typeof value === 'number') out.port = value;
+        break;
+      case 'stateDir':
+        if (typeof value === 'string') out.stateDir = value;
+        break;
+      case 'demoMode':
+        if (typeof value === 'boolean') out.demoMode = value;
+        break;
+      case 'updateChannel':
+        if (typeof value === 'string') out.channel = value;
+        break;
+      case 'repoUrl':
+        if (typeof value === 'string') out.updateRepo = value;
+        break;
+      case 'tls':
+        if (typeof value === 'boolean') out.insecureHttp = !value;
+        break;
+      case 'tlsCert':
+        if (typeof value === 'string') out.tlsCert = value;
+        break;
+      case 'tlsKey':
+        if (typeof value === 'string') out.tlsKey = value;
+        break;
+      case 'log.level':
+        if (typeof value === 'string') out.logLevel = value;
+        break;
+    }
+  }
+  return out;
+}
+
 export function loadConfig(overrides: Partial<Config> = {}): Config {
   const srcDir = path.dirname(fileURLToPath(import.meta.url));
   // src/config.ts -> core/
   const coreDir = path.resolve(srcDir, '..');
 
-  const requestedStateDir = process.env.WREXR_STATE_DIR || '/var/lib/wrexr';
+  const tomlConfig = mapTomlConfig(readTomlConfig(process.env.WREXR_CONFIG));
+  const tomlStateDir = typeof tomlConfig.stateDir === 'string' ? tomlConfig.stateDir : undefined;
+  const requestedStateDir =
+    process.env.WREXR_STATE_DIR || tomlStateDir || '/var/lib/wrexr';
   const stateDir = overrides.stateDir
     ? path.resolve(overrides.stateDir)
     : isWritable(path.resolve(requestedStateDir))
       ? path.resolve(requestedStateDir)
       : path.join(os.tmpdir(), 'wrexr');
 
-  // Optional JSON config file (only values for keys that are not in the env).
-  let fileConfig: Record<string, unknown> = {};
+  // Legacy JSON config is a fallback; WREXR_CONFIG takes precedence over it.
+  let jsonConfig: Record<string, unknown> = {};
   try {
     const file = path.join(stateDir, 'config.json');
     if (fs.existsSync(file)) {
       const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        fileConfig = parsed as Record<string, unknown>;
+        jsonConfig = parsed as Record<string, unknown>;
       }
     }
   } catch {
     /* A broken config file must never prevent first boot. */
   }
+  const fileConfig = { ...jsonConfig, ...tomlConfig };
+
+  const pickBool = (envName: string, key: string, fallback: boolean): boolean => {
+    if (process.env[envName] !== undefined) return parseBool(process.env[envName], fallback);
+    const fromFile = fileConfig[key];
+    if (typeof fromFile === 'boolean') return fromFile;
+    if (typeof fromFile === 'string' || typeof fromFile === 'number') {
+      return parseBool(String(fromFile), fallback);
+    }
+    return fallback;
+  };
 
   const pick = (envName: string, key: string, fallback: string): string => {
     if (process.env[envName] !== undefined) return process.env[envName] as string;
@@ -102,9 +208,9 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
       : fallback;
   };
 
-  const demoMode = overrides.demoMode ?? parseBool(process.env.WREXR_DEMO_MODE, false);
+  const demoMode = overrides.demoMode ?? pickBool('WREXR_DEMO_MODE', 'demoMode', false);
   const insecureHttp =
-    overrides.insecureHttp ?? parseBool(process.env.WREXR_INSECURE_HTTP, false);
+    overrides.insecureHttp ?? pickBool('WREXR_INSECURE_HTTP', 'insecureHttp', false);
   const port = overrides.port ?? parsePort(pick('WREXR_PORT', 'port', '8443'), 8443);
   const host = overrides.host ?? pick('WREXR_HOST', 'host', '0.0.0.0');
   const tlsCert = path.resolve(

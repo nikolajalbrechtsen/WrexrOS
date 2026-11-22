@@ -33,6 +33,7 @@ admin and receive a session token. **There is no default password.**
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
+| `WREXR_CONFIG` | unset | Startup TOML file (installed systems use `/etc/wrexr/wrexrd.toml`) |
 | `WREXR_PORT` | `8443` | Listen port |
 | `WREXR_HOST` | `0.0.0.0` | Listen address |
 | `WREXR_STATE_DIR` | `/var/lib/wrexr` (falls back to `os.tmpdir()/wrexr` if unwritable) | SQLite DB, TLS keys, backups |

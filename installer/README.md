@@ -12,7 +12,7 @@ sudo bash installer/wrexr-installer.sh --dry-run --yes \
 
 ## Interactive paths
 
-Boot the ISO and run `sudo /opt/wrexr/installer/wrexr-installer.sh --interactive`,
+Boot the ISO and run `sudo /opt/wrexr/installer/wrexr-installer.sh --interactive --advanced`,
 or choose *Standard install* / *Advanced install* from the ISO menu.
 
 ### Standard install (defaults)
@@ -22,8 +22,9 @@ or choose *Standard install* / *Advanced install* from the ISO menu.
   disks become **data** disks. Two or more data disks use a ZFS mirror by default.
 * Partitions: 512 MiB EFI (EF00), 1 MiB BIOS boot (EF02), optional 4 GiB swap,
   root on the remainder.
-* Filesystem ZFS (zstd compression), DHCP on `eth0` via bridge `br0`, timezone UTC,
-  keyboard `us`, management port 8443, firewall allowing SSH + HTTPS.
+* Filesystem ZFS (root pool `lz4`, storage pool `zstd`), DHCP on the auto-detected
+  management NIC via bridge `br0`, timezone UTC, keyboard `us`, management port 8443,
+  firewall allowing SSH + HTTPS.
 * Prompts for a root password **or** an SSH public key, then for a final
   `WIPE MY DISKS` confirmation (skipped with `--yes`).
 
@@ -76,12 +77,12 @@ readable files).
 
 ### USB / ISO
 
-Copy a config to the ISO root as `autospec.json` (or pass `wrexr.config=`), then
-choose the *Unattended install (autospec.json)* menu entry. The boot hook should
-call:
+Copy a config to the installation media as `/wrexr/autospec.json` (or pass
+`wrexr.config=`), then choose the *Unattended install (autospec.json)* menu entry. The boot
+hook copies the config to a private temporary path and calls:
 
 ```bash
-/opt/wrexr/installer/wrexr-installer.sh --config /cdrom/wrexr/autospec.json --yes
+/opt/wrexr/installer/wrexr-installer.sh --config /tmp/wrexr-install-XXXXXX.json --yes
 ```
 
 ### PXE
@@ -115,7 +116,7 @@ Highlights:
 | `filesystem` | `zfs` | `zfs`, `btrfs`, `ext4`. |
 | `raid` | `single` | `mirror`, `raidz1`, `raidz2`, `raidz10`. |
 | `swap`, `swapSize` | `true`, `4G` | Swap partition on every system disk. |
-| `disks[]` | required | `path` + `role` (`system`/`parity`/`data`/`cache`), `wipe` defaults to true. Paths must be unique; at least one `system` disk. |
+| `disks[]` | required | `path` + `role` (`system`/`parity`/`data`/`cache`), `wipe` defaults to true. Paths must be unique; at least one `system` disk. `wipe:false` is rejected because the installer cannot preserve existing data. |
 | `network` | required | `mode: dhcp\|static`; static requires `address`, `netmask`, `gateway`, `dns[]`. Optional `firewall.allowTcp`. |
 | `auth` | required | `password` (min 12 chars) and/or `sshKeys[]`. |
 | `users[]`, `shares[]` | `[]` | Local users and SMB/NFS/FTP shares. |
@@ -128,6 +129,7 @@ normalized document. Unknown keys are rejected.
 ## Safety notes
 
 * Verify device names with `lsblk` and keep a backup. Wiped disks are not recoverable.
+* Disks in use by the live system (including the ISO/USB device) are never offered or accepted.
 * The installer refuses to run unattended without `force: true` **and** `--yes`.
 * In interactive mode a typed `WIPE MY DISKS` confirmation is required unless
   `--yes` is supplied.

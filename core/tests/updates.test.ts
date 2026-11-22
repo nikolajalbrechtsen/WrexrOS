@@ -31,7 +31,7 @@ test('semver comparison handles versions, v-prefixes and prereleases', () => {
 
 test('demo update check and install job avoid network access', async () => {
   const check = await updates.checkUpdates();
-  assert.equal(check.current, '0.1.1');
+  assert.equal(check.current, '0.1.2');
   assert.equal(check.latest, '0.2.0');
   assert.equal(check.updateAvailable, true);
   assert.match(check.releaseUrl, /github\.com/);

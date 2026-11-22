@@ -3,8 +3,10 @@
 # DESTRUCTIVE: this script wipes disks. Read installer/README.md before use.
 set -Eeuo pipefail
 
-readonly WREXR_VERSION="${WREXR_VERSION:-1.0.0}"
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# Prefer the version stamped next to the installer (/opt/wrexr/VERSION in the ISO),
+# then the installed system version, then a conservative fallback.
+readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.2)}"
 readonly TARGET="${WREXR_TARGET:-/target}"
 readonly VALIDATOR="${SCRIPT_DIR}/validate-config.mjs"
 readonly SCHEMA="${SCRIPT_DIR}/unattended.schema.json"
@@ -12,6 +14,8 @@ readonly SCHEMA="${SCRIPT_DIR}/unattended.schema.json"
 DRY_RUN=0
 YES=0
 VERBOSE=0
+ADVANCED=0
+TARGET_API_MOUNTED=0
 WREXR_MODE="interactive"
 RAW_CONFIG=""
 CONFIG_FILE=""
@@ -30,9 +34,9 @@ CFG_CHANNEL="stable"
 CFG_REPO_URL="https://repo.wrexr.io"
 CFG_DEMO="false"
 CFG_FORCE="false"
-CFG_PKG_SRC="/cdrom/wrexr/packages"
+CFG_PKG_SRC="/run/live/medium/wrexr/packages"
 NET_MODE="dhcp"
-NET_IFACE="eth0"
+NET_IFACE="auto"
 NET_BRIDGE="br0"
 NET_ADDRESS=""
 NET_NETMASK=""
@@ -52,6 +56,9 @@ die() { log_error "$*"; exit 1; }
 on_error() {
   local line="$1"
   log_error "installation failed at line ${line}"
+  if declare -F disk_release_resources >/dev/null 2>&1; then
+    disk_release_resources || true
+  fi
   log_warn "Rollback hint (run manually, only if a partial install was made):"
   log_warn "  umount -R ${TARGET}/boot/efi 2>/dev/null || true"
   log_warn "  umount -R ${TARGET} 2>/dev/null || true"
@@ -181,9 +188,9 @@ read_config_globals() {
   CFG_REPO_URL="$(cfg_get repoUrl https://repo.wrexr.io)"
   CFG_DEMO="$(cfg_get demoMode false)"
   CFG_FORCE="$(cfg_get force false)"
-  CFG_PKG_SRC="$(cfg_get packageSource /cdrom/wrexr/packages)"
+  CFG_PKG_SRC="$(cfg_get packageSource /run/live/medium/wrexr/packages)"
   NET_MODE="$(cfg_get network.mode dhcp)"
-  NET_IFACE="$(cfg_get network.interface eth0)"
+  NET_IFACE="$(cfg_get network.interface auto)"
   NET_BRIDGE="$(cfg_get network.bridge br0)"
   NET_ADDRESS="$(cfg_get network.address '')"
   NET_NETMASK="$(cfg_get network.netmask '')"
@@ -196,7 +203,7 @@ read_config_globals() {
   mapfile -t FW_PORTS < <(cfg_array network.firewall.allowTcp)
   mapfile -t AUTH_SSH_KEYS < <(cfg_array auth.sshKeys)
   mapfile -t DISK_ROWS < <(cfg_rows disks path role wipe)
-  mapfile -t USER_ROWS < <(cfg_rows users name groups shell sshKeys)
+  mapfile -t USER_ROWS < <(cfg_rows users name groups shell sshKeys password)
   mapfile -t SHARE_ROWS < <(cfg_rows shares name protocol path readOnly recycle users)
 
   if ((${#FW_PORTS[@]} == 0)); then FW_PORTS=(22 "$CFG_UI_PORT"); fi
@@ -218,6 +225,7 @@ prompt_secret() {
   printf '%s: ' "$prompt" >&2
   IFS= read -rs answer || true
   printf '\n' >&2
+  [[ $answer != *:* && $answer != *$'\n'* ]] || die "passwords must not contain ':' or newlines"
   printf '%s' "$answer"
 }
 
@@ -225,7 +233,7 @@ interactive_standard() {
   disk_select_standard
   CFG_HOSTNAME="wrexr"; CFG_TIMEZONE="UTC"; CFG_KEYBOARD="us"
   CFG_FS="zfs"; CFG_SWAP="true"; CFG_SWAP_SIZE="4G"
-  NET_MODE="dhcp"; NET_IFACE="eth0"; NET_BRIDGE="br0"
+  NET_MODE="dhcp"; NET_IFACE="auto"; NET_BRIDGE="br0"
   CFG_UI_PORT="8443"; CFG_CHANNEL="stable"
   USER_ROWS=(); SHARE_ROWS=(); KERNEL_OPTIONS=()
   interactive_credentials
@@ -260,7 +268,7 @@ interactive_advanced() {
   CFG_TIMEZONE="$(prompt_default 'Timezone' UTC)"
   CFG_UI_PORT="$(prompt_default 'Management UI port' 8443)"
   NET_MODE="$(prompt_default 'Network mode (dhcp/static)' dhcp)"
-  NET_IFACE="$(prompt_default 'Management interface' eth0)"
+  NET_IFACE="$(prompt_default 'Management interface (auto to detect)' auto)"
   NET_BRIDGE="$(prompt_default 'Bridge name' br0)"
   if [[ $NET_MODE == static ]]; then
     NET_ADDRESS="$(prompt_default 'Static IPv4 address' 192.168.1.20)"
@@ -303,7 +311,7 @@ interactive_users_shares() {
     for entry in "${entries[@]}"; do
       entry="${entry//[[:space:]]/}"
       IFS=':' read -r name groups shell <<< "$entry"
-      USER_ROWS+=("$(printf '%s\t%s\t%s\t' "$name" "${groups//,/'|'}" "${shell:-/bin/bash}")")
+      USER_ROWS+=("$(printf '%s\t%s\t%s\t\t' "$name" "${groups//,/'|'}" "${shell:-/bin/bash}")")
     done
   fi
   spec="$(prompt_default 'Shares (name:protocol:path, comma separated)' '')"
@@ -352,6 +360,7 @@ const users = lines(e.WREXR_CFG_USERS).map((l) => {
   const f = splitTab(l);
   const o = { name: f[0], groups: (f[1] || "").split("|").filter(Boolean), shell: f[2] || "/bin/bash" };
   if (f[3]) o.sshKeys = f[3].split("|").filter(Boolean);
+  if (f[4]) o.password = f[4];
   return o;
 });
 const shares = lines(e.WREXR_CFG_SHARES).map((l) => {
@@ -403,13 +412,17 @@ WrexrOS installer ${WREXR_VERSION}
   1) Standard install  - automatic disk layout, DHCP, UTC, ZFS, sensible defaults
   2) Advanced options  - manual disks, filesystem, RAID, network, users, shares
 EOF
-  local choice
-  choice="$(prompt_default 'Choose an install path' 1)"
-  case "$choice" in
-    1) interactive_standard ;;
-    2) interactive_advanced ;;
-    *) die "invalid choice: ${choice}" ;;
-  esac
+  if ((ADVANCED)); then
+    interactive_advanced
+  else
+    local choice
+    choice="$(prompt_default 'Choose an install path' 1)"
+    case "$choice" in
+      1) interactive_standard ;;
+      2) interactive_advanced ;;
+      *) die "invalid choice: ${choice}" ;;
+    esac
+  fi
 
   local raw="${WORKDIR}/interactive.json"
   (umask 077; build_interactive_json > "$raw")
@@ -424,6 +437,7 @@ Usage: wrexr-installer.sh [options]
 
 Options:
   --interactive            Guided installation (default). Standard or advanced path.
+  --advanced               Skip the guided menu and open advanced options.
   --config PATH            Unattended install using a validated JSON config.
   --unattended PATH        Alias for --config PATH.
   --dry-run                Print every command instead of executing it. No disk is touched.
@@ -443,6 +457,7 @@ parse_args() {
   while (($#)); do
     case "$1" in
       --interactive) WREXR_MODE=interactive ;;
+      --advanced) ADVANCED=1; WREXR_MODE=interactive ;;
       --config|--unattended)
         shift
         (($#)) || die "$1 requires a path"
@@ -461,9 +476,13 @@ parse_args() {
   done
 }
 
-preflight() {
+preflight_common() {
   local tool missing=0
-  for tool in lsblk sgdisk partprobe debootstrap node openssl chroot blkid; do
+  local -a tools=(
+    lsblk findmnt losetup blkid sgdisk partprobe udevadm debootstrap node openssl
+    chroot mkfs.vfat mkfs.ext4 mkswap mount umount tar mdadm
+  )
+  for tool in "${tools[@]}"; do
     if ! command -v "$tool" >/dev/null 2>&1; then
       if ((DRY_RUN)); then log_warn "tool not found (dry run continues): ${tool}"; else missing=1; log_error "required tool not found: ${tool}"; fi
     fi
@@ -473,10 +492,28 @@ preflight() {
   if ((DRY_RUN)); then log_warn "DRY RUN: no command will modify a disk or file"; fi
 }
 
+# Filesystem-specific tools are checked only after CFG_FS is known.
+preflight_filesystem() {
+  local fs="${1:-$CFG_FS}" tool missing=0
+  local -a tools=()
+  case "$fs" in
+    zfs) tools+=(zpool zfs) ;;
+    btrfs) tools+=(mkfs.btrfs btrfs) ;;
+    ext4) ;;
+    *) die "unsupported filesystem: ${fs}" ;;
+  esac
+  for tool in "${tools[@]}"; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      if ((DRY_RUN)); then log_warn "tool not found (dry run continues): ${tool}"; else missing=1; log_error "required tool not found: ${tool}"; fi
+    fi
+  done
+  ((missing == 0)) || die "filesystem prerequisites are missing for ${fs}"
+}
+
 main() {
   parse_args "$@"
   WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/wrexr-install.XXXXXX")"
-  preflight
+  preflight_common
 
   if [[ $WREXR_MODE == interactive ]]; then
     interactive_config
@@ -487,16 +524,24 @@ main() {
     ((YES)) || die "unattended installs require --yes (refusing to wipe disks without it)"
   fi
 
+  preflight_filesystem "$CFG_FS"
+  disk_validate_configured
+  network_resolve_interface
   disk_confirm_wipe
 
-  # Order matters: partition and mount the target before debootstrap, then create
-  # the storage pool inside the mounted target tree.
+  # Order matters: partition and mount the target before debootstrap, mount the
+  # API filesystems before any chroot, then write fstab after debootstrap so the
+  # base conffile cannot overwrite our entries.
   disk_partition_system
   disk_create_root_fs
   base_debootstrap
+  mount_target_api_fs
   disk_prepare_storage
+  mdadm_register_arrays
+  fstab_write
   base_copy_packages
   base_copy_repo
+  install_node_runtime_target
   network_configure
   base_configure
   bootloader_install

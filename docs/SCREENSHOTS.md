@@ -1,8 +1,8 @@
 # Screenshots
 
-`WrexrOS` is a headless appliance; the pictures below are rendered from the actual UI
+`WrexrOS` is a headless appliance; the pictures below are reference renders of the UI
 components in `web/` using demo data. They are checked in as SVG so they remain crisp and
-small. CI replaces them with PNG captures from a headless browser on tagged releases.
+small. PNG captures can be produced manually after starting the demo stack.
 
 | Screen | File | Shows |
 | --- | --- | --- |
@@ -25,5 +25,4 @@ chromium --headless --disable-gpu --window-size=1440,900 \
 # Dark mode is persisted in localStorage; toggle in the UI first.
 ```
 
-The CI workflow `capture-screenshots` uploads PNGs to the release. Until then the SVG
-reference renders are the canonical visual documentation.
+The SVG files are the canonical visual documentation; CI does not capture screenshots.

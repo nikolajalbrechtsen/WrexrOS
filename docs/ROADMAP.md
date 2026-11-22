@@ -1,6 +1,6 @@
 # Roadmap
 
-## 0.1.1 — Foundation (current)
+## 0.1.2 — Foundation (current)
 
 Delivered in the first release:
 
@@ -34,6 +34,6 @@ Delivered in the first release:
 
 * WrexrOS is not a desktop distribution; there is no general GUI session by default.
 * We do not fork QEMU, Docker, Samba or ZFS; we integrate them.
-* 0.1.1 does not guarantee production HA; treat clusters as experimental until 0.3.0.
+* 0.1.2 does not guarantee production HA; treat clusters as experimental until 0.3.0.
 
 Have a feature request? Open an issue on the canonical repository with a concrete use case.

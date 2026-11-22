@@ -26,8 +26,10 @@ sudo /opt/wrexr/boot/firstboot.sh
 ```
 
 The UI port defaults to `8443` when `wrexrd.toml` is missing or unreadable.
-The IP lookup prefers `br0`, `vmbr0`, `lan0`, `eth0` and common enumerations, then
-falls back to the first address from `hostname -I`.
+`firstboot.sh` writes `/var/lib/wrexr/tls/cert.pem` and `key.pem`, the same defaults
+`wrexrd` uses; certificates from the old `/etc/wrexr/tls/wrexr.*` location are migrated
+automatically. The IP lookup prefers `br0`, `vmbr0`, `lan0`, `eth0` and common
+enumerations, then falls back to the first address from `hostname -I`.
 
 ## Kiosk mode
 

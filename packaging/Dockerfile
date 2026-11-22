@@ -5,7 +5,7 @@ FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
     WREXR_ALLOW_ROOT=1 \
-    WREXR_VERSION=1.0.0
+    WREXR_VERSION=
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates \

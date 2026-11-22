@@ -13,7 +13,14 @@ API: https://api.github.com/repos/nikolajalbrechtsen/WrexrOS/releases/latest
 ```
 
 `VERSION` in the repository root is the current version. Releases are tagged `vX.Y.Z` by
-CI. Beta releases are tagged `vX.Y.Z-beta.N` and only visible in the `beta` channel.
+CI. Beta releases are tagged `vX.Y.Z-beta.N` and are selected by the `beta` channel.
+
+Each release publishes:
+
+* `WrexrOS-<version>-amd64.iso` — full installation media.
+* `WrexrOS-<version>-linux-amd64.tar.gz` — code bundle used by the in-place updater.
+* `SHA256SUMS` — checksums for both assets.
+* `SHA256SUMS.asc` — optional detached signature when a release key is configured.
 
 ## Checking
 
@@ -23,16 +30,23 @@ wrexctl update check --json
 curl -k -H "Authorization: Bearer $TOKEN" .../api/v1/updates/check
 ```
 
-Output:
+Example JSON:
 
 ```json
 {
-  "current": "0.1.1",
-  "latest": "0.1.1",
+  "current": "0.1.2",
+  "latest": "0.2.0",
   "updateAvailable": true,
-  "releaseUrl": "https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.1",
-  "publishedAt": "2026-11-21T12:00:00Z",
-  "assets": ["WrexrOS-0.1.1-amd64.iso", "SHA256SUMS"]
+  "releaseUrl": "https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.2.0",
+  "publishedAt": "2026-11-22T12:00:00Z",
+  "assets": [
+    {
+      "name": "WrexrOS-0.2.0-amd64.iso",
+      "size": 1185366016,
+      "downloadUrl": "https://github.com/.../WrexrOS-0.2.0-amd64.iso",
+      "contentType": "application/octet-stream"
+    }
+  ]
 }
 ```
 
@@ -42,24 +56,35 @@ keeps the last known result so the UI never shows a misleading "up to date" stat
 ## Verification and install
 
 ```bash
-sudo wrexr-update.sh --check
-sudo wrexr-update.sh --install          # confirms, verifies, swaps, restarts
-sudo wrexr-update.sh --install 0.1.1 --yes
+sudo ./updater/wrexr-update.sh --check
+sudo ./updater/wrexr-update.sh --install              # confirms, verifies, swaps, restarts
+sudo ./updater/wrexr-update.sh --install 0.1.2 --yes  # specific version, non-interactive
+sudo ./updater/wrexr-update.sh --verify-only ./asset.tar.gz ./SHA256SUMS.asc
 ```
 
 Steps:
 
-1. Fetch release assets and `SHA256SUMS`.
-2. Verify every downloaded asset with SHA-256 (`updater/verify-release.mjs`).
-3. If `/etc/wrexr/trusted-updates.gpg` exists, verify the detached `.asc` signature with
-   `gpg --verify`. **When a trust key is installed, unsigned updates are refused.**
-4. Stage the payload in `/var/lib/wrexr/updates/staging/<version>`.
-5. Atomically swap `/opt/wrexr` with the staged tree, keeping the previous tree as
-   `/opt/wrexr.old`.
-6. Restart `wrexrd` and emit an audit entry/event. Roll back with
-   `sudo wrexr-update.sh --rollback` if health checks fail.
+1. Fetch release metadata and select the Linux/amd64 `.tar.gz` bundle. Override the selection
+   with `WREXR_ASSET_PATTERN` if you publish a custom bundle.
+2. Download the bundle, `SHA256SUMS` and `SHA256SUMS.asc` into a temporary directory.
+3. Verify the SHA-256 checksum with `updater/verify-release.mjs`.
+4. If `/etc/wrexr/trusted-updates.gpg` exists, require and verify the detached `.asc`
+   signature. **With a trust key installed, unsigned updates are refused.**
+5. Extract the bundle into `/opt/wrexr.new.<pid>`, move the current tree to
+   `/opt/wrexr-backups/wrexr-<timestamp>` and atomically swap it into `/opt/wrexr`.
+6. Restart `wrexrd` and append a JSON audit event to `/var/log/wrexr/audit.log`.
 
-Full ISO upgrades are a fresh install (backup `/etc/wrexr` and `/var/lib/wrexr` first).
+If the service restart fails after the swap, the previous tree is moved back automatically.
+Manual rollback:
+
+```bash
+sudo systemctl stop wrexrd
+sudo mv /opt/wrexr /opt/wrexr.failed
+sudo mv /opt/wrexr-backups/<timestamp> /opt/wrexr
+sudo systemctl start wrexrd
+```
+
+Full ISO upgrades are a fresh install (back up `/etc/wrexr` and `/var/lib/wrexr` first).
 In-place updates replace code, not the Debian base; base OS upgrades are delivered as a new
 ISO.
 
@@ -71,11 +96,14 @@ off by default so administrators can schedule a maintenance window.
 
 ## Signing model
 
-Maintainers generate an Ed25519 signing key and export the public key into
-`/etc/wrexr/trusted-updates.gpg` on installed systems (shipped via the ISO). CI signs each
-release asset with the private key stored in GitHub Actions secrets. App templates in the
-catalog use the same trust model: `trusted: true` templates carry a verifiable signature;
-community templates show a warning until explicitly trusted by the administrator.
+Maintainers may configure `RELEASE_GPG_PRIVATE_KEY` and `RELEASE_GPG_PASSPHRASE` in GitHub
+Actions. When present, CI signs the ISO, code bundle and `SHA256SUMS`; export the public key
+to `/etc/wrexr/trusted-updates.gpg` on installed systems. Without a configured key, releases
+are published unsigned and checksum verification still applies.
+
+App templates in the catalog use the same trust model: `trusted: true` templates carry a
+verifiable signature; community templates show a warning until explicitly trusted by the
+administrator.
 
 ## Timer
 

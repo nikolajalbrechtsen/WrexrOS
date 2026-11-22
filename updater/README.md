@@ -33,7 +33,7 @@ Channels:
 
 ## Signing model
 
-1. Every release publishes `SHA256SUMS` and, when a signing key exists, `SHA256SUMS.sig`
+1. Every release publishes `SHA256SUMS` and, when a signing key exists, `SHA256SUMS.asc`
    (detached signature over the checksums file).
 2. The updater always verifies the asset's SHA256 hash.
 3. If `/etc/wrexr/trusted-updates.gpg` (or `WREXR_TRUSTED_KEY`) exists, the detached signature
@@ -44,7 +44,7 @@ Channels:
 Manual verification:
 
 ```sh
-node verify-release.mjs wrexros-linux-amd64.deb SHA256SUMS SHA256SUMS.sig \
+node verify-release.mjs WrexrOS-0.1.2-linux-amd64.tar.gz SHA256SUMS SHA256SUMS.asc \
   --keyring /etc/wrexr/trusted-updates.gpg --require-signature
 ```
 
@@ -60,8 +60,11 @@ sudo ./wrexr-update.sh --install              # latest, with confirmation
 sudo ./wrexr-update.sh --install v0.2.0 --yes # specific tag, non-interactive
 sudo ./wrexr-update.sh --install --dry-run    # print the plan only
 sudo ./wrexr-update.sh --install --force      # reinstall/downgrade explicitly
-sudo ./wrexr-update.sh --verify-only ./asset.deb ./SHA256SUMS ./SHA256SUMS.sig
+sudo ./wrexr-update.sh --verify-only ./WrexrOS-0.1.2-linux-amd64.tar.gz ./SHA256SUMS.asc
 ```
+
+`--verify-only` takes the asset and an optional detached signature; `SHA256SUMS` is read from the
+asset's directory unless `WREXR_SHA256SUMS` overrides it.
 
 The installer:
 

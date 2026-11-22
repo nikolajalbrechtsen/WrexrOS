@@ -17,7 +17,7 @@
   ],
   "network": {
     "mode": "dhcp",
-    "interface": "eth0",
+    "interface": "auto",
     "bridge": "br0",
     "firewall": { "enabled": true, "allowTcp": [22, 8443] }
   },

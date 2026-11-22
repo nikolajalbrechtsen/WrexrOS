@@ -2,23 +2,48 @@
 # Sourced by wrexr-installer.sh. All output is written under $TARGET.
 
 netmask_to_prefix() {
-  local mask="$1" bits=0 octet
+  local mask="$1" bits=0 octet seen_zero=0
   local IFS='.'
   for octet in $mask; do
+    if ((seen_zero)) && [[ $octet != 0 ]]; then
+      die "netmask ${mask} is not contiguous"
+    fi
     case "$octet" in
-      255) bits=$((bits + 8)) ;;
-      254) bits=$((bits + 7)) ;;
-      252) bits=$((bits + 6)) ;;
-      248) bits=$((bits + 5)) ;;
-      240) bits=$((bits + 4)) ;;
-      224) bits=$((bits + 3)) ;;
-      192) bits=$((bits + 2)) ;;
-      128) bits=$((bits + 1)) ;;
-      0) ;;
-      *) log_warn "unusual netmask octet '$octet'; assuming /$bits"; return 0 ;;
+      255) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 8)) ;;
+      254) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 7)) ;;
+      252) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 6)) ;;
+      248) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 5)) ;;
+      240) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 4)) ;;
+      224) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 3)) ;;
+      192) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 2)) ;;
+      128) ((seen_zero)) && die "netmask ${mask} is not contiguous"; bits=$((bits + 1)) ;;
+      0) seen_zero=1 ;;
+      *) die "invalid netmask octet '${octet}' in ${mask}" ;;
     esac
   done
+  ((bits > 0 && bits < 32)) || die "invalid netmask: ${mask}"
   printf '%s\n' "$bits"
+}
+
+network_resolve_interface() {
+  local candidate
+  if [[ $NET_IFACE == auto || -z $NET_IFACE ]]; then
+    for candidate in /sys/class/net/*; do
+      [[ -e $candidate ]] || continue
+      candidate="${candidate##*/}"
+      case "$candidate" in
+        lo|br*|veth*|docker*|virbr*|vmbr*|tailscale*|wg*) continue ;;
+      esac
+      # Physical and virtio NICs expose a /device symlink; virtual loopback-like
+      # interfaces do not.
+      [[ -e /sys/class/net/${candidate}/device ]] || continue
+      NET_IFACE="$candidate"
+      break
+    done
+    [[ $NET_IFACE != auto && -n $NET_IFACE ]] || die "could not auto-detect a management interface; set network.interface"
+  fi
+  [[ -e /sys/class/net/${NET_IFACE} ]] || die "configured management interface does not exist: ${NET_IFACE}"
+  log_info "Using management interface ${NET_IFACE} (bridge ${NET_BRIDGE})"
 }
 
 network_configure() {
@@ -33,17 +58,6 @@ network_configure() {
     ''
     "auto ${NET_BRIDGE}"
   )
-  local -a netplan=(
-    'network:'
-    '  version: 2'
-    '  renderer: networkd'
-    "  ethernets:"
-    "    ${NET_IFACE}:"
-    "      dhcp4: false"
-    "  bridges:"
-    "    ${NET_BRIDGE}:"
-    "      interfaces: [${NET_IFACE}]"
-  )
 
   if [[ $NET_MODE == dhcp ]]; then
     iface+=(
@@ -51,15 +65,10 @@ network_configure() {
       "    bridge-ports ${NET_IFACE}"
       '    bridge-stp off'
       '    bridge-fd 0'
-      '    bridge-vlan-aware yes'
-      '    bridge-vids 2-4094'
     )
-    netplan+=('      dhcp4: true')
   else
-    local prefix
+    local prefix dns_list="" dns
     prefix="$(netmask_to_prefix "$NET_NETMASK")"
-    local dns_list=""
-    local dns
     for dns in "${NET_DNS[@]}"; do dns_list="${dns_list:+$dns_list }$dns"; done
     iface+=(
       "iface ${NET_BRIDGE} inet static"
@@ -70,26 +79,13 @@ network_configure() {
       "    bridge-ports ${NET_IFACE}"
       '    bridge-stp off'
       '    bridge-fd 0'
-      '    bridge-vlan-aware yes'
-      '    bridge-vids 2-4094'
-    )
-    netplan+=(
-      "      addresses: [${NET_ADDRESS}/${prefix}]"
-      "      routes:"
-      "        - to: default"
-      "          via: ${NET_GATEWAY}"
-      "      nameservers:"
-      "        addresses: [${dns_list}]"
     )
   fi
 
-  local iface_content netplan_content
+  local iface_content
   iface_content="$(printf '%s\n' "${iface[@]}")"
-  netplan_content="$(printf '%s\n' "${netplan[@]}")"
 
   write_file "$TARGET/etc/network/interfaces.d/wrexr" "$iface_content" 644
-  # Netplan fallback: harmless when ifupdown is used, and ready for cloud images.
-  write_file "$TARGET/etc/netplan/99-wrexr.yaml" "$netplan_content" 600
   write_file "$TARGET/etc/hostname" "$CFG_HOSTNAME" 644
   write_file "$TARGET/etc/hosts" "$(printf '%s\n' \
     '127.0.0.1 localhost' \
@@ -101,7 +97,6 @@ network_configure() {
     'ff02::2 ip6-allrouters')" 644
 
   if [[ $NET_MODE == static ]]; then
-    local dns
     local -a resolv=()
     for dns in "${NET_DNS[@]}"; do resolv+=("nameserver $dns"); done
     write_file "$TARGET/etc/resolv.conf" "$(printf '%s\n' "${resolv[@]}")" 644

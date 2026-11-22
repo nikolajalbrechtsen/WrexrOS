@@ -109,6 +109,19 @@ function short(value) {
   return text.length > 60 ? `${text.slice(0, 57)}...` : text;
 }
 
+/** Defaults that depend on another user-supplied value must be injected before schema defaults. */
+function applyDynamicDefaults(data) {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) return;
+  if (data.network !== undefined && (data.network === null || typeof data.network !== "object" || Array.isArray(data.network))) return;
+  data.network ??= {};
+  if (data.network.firewall !== undefined && (data.network.firewall === null || typeof data.network.firewall !== "object" || Array.isArray(data.network.firewall))) return;
+  data.network.firewall ??= {};
+  if (data.network.firewall.allowTcp === undefined) {
+    const uiPort = Number.isInteger(data.uiPort) ? data.uiPort : 8443;
+    data.network.firewall.allowTcp = [22, uiPort];
+  }
+}
+
 /** Inject schema defaults before validation, so oneOf branches see defaults. */
 function applyDefaults(value, schema, path = "$") {
   if (!schema || typeof schema !== "object") return;
@@ -278,6 +291,7 @@ function main() {
     fail(`${opts.file}: invalid JSON: ${error.message}`);
   }
 
+  applyDynamicDefaults(data);
   applyDefaults(data, schema);
 
   const errors = [];

@@ -11,6 +11,52 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Alert delivery backends (email, webhook, Pushover) and backup replication.
 - Plugin marketplace and localization packs.
 
+## [0.1.2] - 2026-11-22
+
+### Fixed
+- ISO install mode is now declared on every ISOLINUX and GRUB menu entry instead of being set
+  globally in the image command line. Rescue, existing-system and live entries can no longer
+  inherit an accidental auto-install default.
+- The ISOLINUX help entry now boots a real kernel command line instead of being a text-only
+  label that dropped firmware back to `boot:`.
+- Management NIC detection now defaults to `auto` instead of `eth0`, covering Proxmox virtio,
+  Intel and Realtek interfaces and avoiding a silent no-link install.
+- Live-media paths use `/run/live/medium/wrexr/...`; local unattended configs and `.deb`
+  packages are copied to private `0600` temporary files before use.
+- RAID validation now requires three devices for `raidz1` and four for `raidz2`/`raidz10`,
+  preventing invalid ZFS and mdadm arrays from being created.
+- mdadm arrays are registered in the installed system after all arrays have been created, even
+  when no separate data disks are present.
+- The builder verifies BIOS and UEFI El Torito entries with patterns matching real
+  `xorriso -report_el_torito plain` output.
+- Node 24 is checksum-verified and embedded in the ISO and installed system, so native
+  TypeScript execution works on Debian bookworm.
+- CI publishes a `WrexrOS-<version>-linux-amd64.tar.gz` code bundle and includes both the ISO
+  and bundle in `SHA256SUMS`; the in-place updater can now verify and install a real asset.
+- CI checks that `VERSION`, manifests, CLI, backend fallbacks, screenshots and the release tag
+  agree before publishing.
+- Documentation now matches the shipped menus, updater arguments, verification workflow and
+  Proxmox direct-ISO attach procedure.
+- The live image now includes `parted` (for `partprobe`) and the installed system includes
+  `efibootmgr`, so preflight and UEFI GRUB installation work on real BIOS/OVMF machines.
+- Disk safety now follows loop-backed live media (Ventoy, `findiso`, PXE) to its parent disk, so
+  the boot USB can no longer be offered as an installation target.
+- All config-level disk-count, filesystem and parity checks run before the first destructive
+  `sgdisk --zap-all`; invalid RAID layouts are rejected without erasing disks.
+- `raid=single` is rejected for multi-disk root and storage pools instead of silently creating a
+  stripe or ignoring disks.
+- Preflight checks filesystem-specific tools only after the filesystem is known, so ext4 and
+  btrfs configs no longer require ZFS binaries (or miss btrfs binaries).
+- `wrexrd` now reads the installer-generated `/etc/wrexr/wrexrd.toml` via `WREXR_CONFIG`, and
+  first boot writes the certificate to `/var/lib/wrexr/tls/` where the daemon actually looks.
+- Unattended `network.firewall.allowTcp` now defaults to the configured `uiPort` (plus SSH),
+  keeping custom management ports reachable.
+- The dead “Boot existing system” menu entry was replaced with an honest live-shell entry.
+
+### Security
+- A trust key installed at `/etc/wrexr/trusted-updates.gpg` still refuses unsigned updates.
+- Detached signatures use `SHA256SUMS.asc` consistently across CI, docs and the updater.
+
 ## [0.1.1] - 2026-11-22
 
 ### Fixed
@@ -63,6 +109,7 @@ this release establishes the full foundation.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.
 - Signed update verification; unsigned assets refused when a trust key is installed.
 
-[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.2
 [0.1.1]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.1
 [0.1.0]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.0
