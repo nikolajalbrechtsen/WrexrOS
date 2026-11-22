@@ -1,6 +1,6 @@
 # Installing WrexrOS
 
-This guide covers the supported installation paths for 0.1.5. All installations are
+This guide covers the supported installation paths for 0.1.6. All installations are
 **destructive on the target disk**; the installer prints every destructive command in
 `--dry-run` mode first.
 
@@ -19,7 +19,7 @@ Optional: extra disks for the parity array, an IOMMU-capable CPU/board for GPU p
 ## 1. Get and verify the image
 
 ```bash
-VERSION=0.1.5
+VERSION=0.1.6
 curl -LO "https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v${VERSION}/WrexrOS-${VERSION}-amd64.iso"
 curl -LO "https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v${VERSION}/SHA256SUMS"
 grep "WrexrOS-${VERSION}-amd64.iso" SHA256SUMS | sha256sum -c -
@@ -65,6 +65,18 @@ The ISO shows:
 Every entry states its install mode explicitly; rescue and live entries disable the installer
 autostart hook. The live image starts only the installer, so it does not run `wrexrd`, the
 updater timer or Docker's storage-driver probe.
+
+### Installer interface
+
+On a real console, noVNC session or SSH session, the installer opens a full-screen ncurses
+interface similar to the Proxmox installer. It provides menu selection, disk-role radiolists,
+configuration forms, password entry, an installation-plan review, progress dialogs and a final
+completion dialog. `whiptail` is included in the live image.
+
+Use `--text` (or `WREXR_TUI=never`) if you prefer line prompts, and `--tui` (or
+`WREXR_TUI=always`) to require the full-screen interface. Serial consoles, CI logs and sessions
+without `whiptail` automatically fall back to plain line prompts. The adaptive colour and ASCII
+behaviour from 0.1.5 still applies to text mode.
 
 ## 4. Standard install
 
@@ -156,7 +168,7 @@ network-online is reached.
 The console displays:
 
 ```text
-WrexrOS 0.1.5
+WrexrOS 0.1.6
 https://192.168.1.24:8443
 
 wrexros login:
@@ -183,7 +195,7 @@ Copy the ISO to the Proxmox host directly rather than relying on USB passthrough
 
 ```bash
 cd /var/lib/vz/template/iso
-VERSION=0.1.5
+VERSION=0.1.6
 wget -O "WrexrOS-${VERSION}-amd64.iso" \
   "https://github.com/nikolajalbrechtsen/WrexrOS/releases/download/v${VERSION}/WrexrOS-${VERSION}-amd64.iso"
 wget -O SHA256SUMS \

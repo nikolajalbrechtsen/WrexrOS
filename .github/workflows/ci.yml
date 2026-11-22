@@ -165,3 +165,28 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-beta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload ISO to Proxmox
+        env:
+          PROXMOX_HOST: ${{ secrets.PROXMOX_HOST }}
+          PROXMOX_USER: ${{ secrets.PROXMOX_USER }}
+          PROXMOX_ISO_DIR: ${{ secrets.PROXMOX_ISO_DIR }}
+          PROXMOX_SSH_KEY: ${{ secrets.PROXMOX_SSH_KEY }}
+        run: |
+          if [ -z "${PROXMOX_HOST:-}" ] || [ -z "${PROXMOX_USER:-}" ] || \
+             [ -z "${PROXMOX_ISO_DIR:-}" ] || [ -z "${PROXMOX_SSH_KEY:-}" ]; then
+            echo "Proxmox deployment secrets are not configured; skipping ISO upload."
+            exit 0
+          fi
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$PROXMOX_SSH_KEY" > "$HOME/.ssh/wrexros-deploy"
+          chmod 600 "$HOME/.ssh/wrexros-deploy"
+          ssh-keyscan -H "$PROXMOX_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null
+          VERSION="$(cat VERSION)"
+          ISO="out/WrexrOS-${VERSION}-amd64.iso"
+          test -f "$ISO"
+          SSH="ssh -i $HOME/.ssh/wrexros-deploy -o BatchMode=yes -o StrictHostKeyChecking=yes"
+          $SSH "$PROXMOX_USER@$PROXMOX_HOST" "mkdir -p -- '$PROXMOX_ISO_DIR'"
+          scp -i "$HOME/.ssh/wrexros-deploy" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$ISO" "$PROXMOX_USER@$PROXMOX_HOST:$PROXMOX_ISO_DIR/"
+          $SSH "$PROXMOX_USER@$PROXMOX_HOST" \
+            "cd '$PROXMOX_ISO_DIR' && sha256sum 'WrexrOS-${VERSION}-amd64.iso' && ls -lh 'WrexrOS-${VERSION}-amd64.iso'"

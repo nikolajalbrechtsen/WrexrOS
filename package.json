@@ -1,6 +1,6 @@
 {
   "name": "wrexros",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Self-hosted hypervisor and parity NAS appliance",
   "type": "module",

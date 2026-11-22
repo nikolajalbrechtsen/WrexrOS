@@ -10,7 +10,7 @@ finish_install() {
 
   disk_unmount_all
 
-  printf '\n' >&2
+  printf '\n' | ui_write
   if declare -F ui_success >/dev/null 2>&1; then
     ui_success "WrexrOS ${WREXR_VERSION} installed to ${TARGET}"
   else
@@ -20,9 +20,10 @@ finish_install() {
   log_info "First boot: the setup wizard is required (/var/lib/wrexr/setup-complete is absent)."
   if ((YES)); then
     log_info "--yes supplied: not rebooting automatically. Run 'reboot' when ready."
-  else
-    local answer=""
-    read -r -p "Remove installation media and reboot now? [y/N] " answer || true
-    if [[ $answer == [yY]* ]]; then run reboot; fi
+  elif tui_yesno "Remove installation media and reboot now?"; then
+    run reboot
+  fi
+  if ((TUI_MODE)); then
+    tui_msgbox "WrexrOS ${WREXR_VERSION} installed.\n\nManagement URL: https://<${CFG_HOSTNAME}-ip>:${CFG_UI_PORT}/\n\nRemove the installation media before rebooting." || true
   fi
 }

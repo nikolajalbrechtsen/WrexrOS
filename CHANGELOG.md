@@ -11,6 +11,27 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Alert delivery backends (email, webhook, Pushover) and backup replication.
 - Plugin marketplace and localization packs.
 
+## [0.1.6] - 2026-11-22
+
+### Added
+- A full-screen ncurses installer interface, similar to the Proxmox installer, is now the default
+  on VGA/noVNC, serial consoles and SSH sessions with a working terminal. It provides menus,
+  radiolists, input boxes, password boxes, an installation-plan summary, progress dialogs and a
+  final completion dialog.
+- Added `--tui` and `--text` flags plus `WREXR_TUI=always|never|auto` to force or disable the
+  full-screen interface. Text mode remains the automatic fallback for CI, piped output and
+  terminals without `whiptail`.
+- The live image now includes `whiptail`, so the full-screen installer is available immediately
+  after booting the ISO.
+
+### Fixed
+- Disk enumeration no longer uses `lsblk -e loop,rom`, which fails on some util-linux builds and
+  can hide every eligible disk. Loop and ROM devices are now filtered by `TYPE` in the shell.
+- Full-screen mode redirects installer command output to the installer work directory log instead
+  of writing over the active dialog, and shows destructive warnings and confirmations as dialogs.
+- Advanced disk roles, hostname, filesystem, RAID, network, credentials and optional users/shares
+  are collected through full-screen dialogs instead of raw line prompts when a terminal supports it.
+
 ## [0.1.5] - 2026-11-22
 
 ### Changed
@@ -156,7 +177,8 @@ this release establishes the full foundation.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.
 - Signed update verification; unsigned assets refused when a trust key is installed.
 
-[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.6
 [0.1.5]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.5
 [0.1.4]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.4
 [0.1.3]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.3

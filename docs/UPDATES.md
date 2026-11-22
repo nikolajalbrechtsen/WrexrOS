@@ -34,7 +34,7 @@ Example JSON:
 
 ```json
 {
-  "current": "0.1.5",
+  "current": "0.1.6",
   "latest": "0.2.0",
   "updateAvailable": true,
   "releaseUrl": "https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.2.0",
@@ -58,7 +58,7 @@ keeps the last known result so the UI never shows a misleading "up to date" stat
 ```bash
 sudo ./updater/wrexr-update.sh --check
 sudo ./updater/wrexr-update.sh --install              # confirms, verifies, swaps, restarts
-sudo ./updater/wrexr-update.sh --install 0.1.5 --yes  # specific version, non-interactive
+sudo ./updater/wrexr-update.sh --install 0.1.6 --yes  # specific version, non-interactive
 sudo ./updater/wrexr-update.sh --verify-only ./asset.tar.gz ./SHA256SUMS.asc
 ```
 

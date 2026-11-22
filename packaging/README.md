@@ -34,7 +34,7 @@ The script refuses to run as root unless `--allow-root` is given or
 ./packaging/build-iso.sh --output /srv/iso --allow-root
 ```
 
-The version is read from the repository root `VERSION` file (fallback: `0.1.5`,
+The version is read from the repository root `VERSION` file (fallback: `0.1.6`,
 override with `WREXR_VERSION`). Results:
 
 ```
@@ -80,6 +80,22 @@ sudo dd if=out/WrexrOS-<version>-amd64.iso of=/dev/sdX bs=4M status=progress con
 
 Alternatively use balenaEtcher or Rufus (DD mode). The image is hybrid: it boots
 from USB in both UEFI and legacy BIOS mode.
+
+## Release ISO delivery
+
+When a version tag is published, CI uploads the built ISO to the configured Proxmox host
+automatically after creating the GitHub release. The deployment uses SSH key authentication and
+these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `PROXMOX_HOST` | Proxmox hostname or IP address |
+| `PROXMOX_USER` | SSH user, normally `root` |
+| `PROXMOX_ISO_DIR` | ISO storage directory, normally `/var/lib/vz/template/iso` |
+| `PROXMOX_SSH_KEY` | Private Ed25519 key authorized on the Proxmox host |
+
+If any secret is missing, the upload step is skipped and the release still succeeds. The filename
+on the host is `WrexrOS-<version>-amd64.iso`, matching the published GitHub release asset.
 
 ## PXE notes
 

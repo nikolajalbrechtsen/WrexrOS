@@ -74,6 +74,10 @@ try {
   if (/\(\(.*&&\s*-n\s/.test(disk)) {
     problems.push('installer/functions/disk.sh uses -n inside arithmetic; this fails under set -u');
   }
+  const diskCommands = disk.split('\n').map((line) => line.replace(/#.*$/, ''));
+  if (diskCommands.some((line) => /\blsblk\b[^\n]*\s-e\s+(?:[^\n]*\bloop\b|[^\n]*\brom\b)/.test(line))) {
+    problems.push('installer/functions/disk.sh uses lsblk -e with device names; filter TYPE in the shell instead');
+  }
 } catch (error) {
   problems.push(`cannot read installer/functions/disk.sh: ${error.message}`);
 }
@@ -85,8 +89,61 @@ try {
       problems.push(`installer/wrexr-installer.sh is missing adaptive UI helper ${needle}`);
     }
   }
+  for (const needle of ['tui_init', 'tui_menu', 'tui_msgbox', 'ask_secret']) {
+    if (!installer.includes(needle)) {
+      problems.push(`installer/wrexr-installer.sh is missing full-screen installer helper ${needle}`);
+    }
+  }
+  const uiWriteBody = installer.match(/ui_write\(\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+  if (/\|\s*ui_write\b/.test(uiWriteBody)) {
+    problems.push('installer/wrexr-installer.sh has a recursive ui_write pipeline');
+  }
 } catch (error) {
   problems.push(`cannot read installer/wrexr-installer.sh: ${error.message}`);
+}
+
+try {
+  const tui = read('installer/functions/tui.sh');
+  for (const needle of ['whiptail', '--menu', '--radiolist', '--passwordbox', 'tui_progress']) {
+    if (!tui.includes(needle)) {
+      problems.push(`installer/functions/tui.sh is missing full-screen dialog support: ${needle}`);
+    }
+  }
+} catch (error) {
+  problems.push(`cannot read installer/functions/tui.sh: ${error.message}`);
+}
+
+try {
+  if (!/^whiptail$/m.test(read('packaging/packages.list'))) {
+    problems.push('packaging/packages.list must include whiptail for the full-screen installer');
+  }
+} catch (error) {
+  problems.push(`cannot read packaging/packages.list: ${error.message}`);
+}
+
+for (const shellFile of [
+  'installer/wrexr-installer.sh',
+  'installer/functions/disk.sh',
+  'installer/functions/network.sh',
+  'installer/functions/base.sh',
+  'installer/functions/bootloader.sh',
+  'installer/functions/finish.sh',
+  'installer/functions/tui.sh',
+]) {
+  try {
+    read(shellFile).split('\n').forEach((line, index) => {
+      const match = line.match(/^\s*local\s+(.*)$/);
+      if (!match) return;
+      const names = [...match[1].matchAll(/(?:^|\s)([A-Za-z_][A-Za-z0-9_]*)=/g)].map((item) => item[1]);
+      for (const name of names) {
+        if (new RegExp(`\\$\\{?${name}(?:\\W|$)`).test(match[1])) {
+          problems.push(`${shellFile}:${index + 1} references ${name} inside its own local declaration`);
+        }
+      }
+    });
+  } catch (error) {
+    problems.push(`cannot read ${shellFile}: ${error.message}`);
+  }
 }
 
 try {

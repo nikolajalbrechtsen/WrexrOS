@@ -6,7 +6,7 @@ set -Eeuo pipefail
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Prefer the version stamped next to the installer (/opt/wrexr/VERSION in the ISO),
 # then the installed system version, then a conservative fallback.
-readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.5)}"
+readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.6)}"
 readonly TARGET="${WREXR_TARGET:-/target}"
 readonly VALIDATOR="${SCRIPT_DIR}/validate-config.mjs"
 readonly SCHEMA="${SCRIPT_DIR}/unattended.schema.json"
@@ -20,6 +20,7 @@ WREXR_MODE="interactive"
 RAW_CONFIG=""
 CONFIG_FILE=""
 WORKDIR=""
+WREXR_LOG_FILE="${TMPDIR:-/tmp}/wrexr-installer.log"
 
 # ---- configuration globals (filled by read_config_globals or interactive path) ----
 CFG_HOSTNAME="wrexr"
@@ -57,6 +58,19 @@ UI_WIDTH=80
 UI_COLOR_MODE="${WREXR_UI_COLOR:-auto}"
 C_RESET='' C_BOLD='' C_DIM='' C_CYAN='' C_GREEN='' C_YELLOW='' C_RED='' C_EDGE=''
 BOX_TL='+' BOX_TR='+' BOX_BL='+' BOX_BR='+' BOX_H='-' UI_BULLET='*' UI_ARROW='->' UI_SEP='|'
+
+# In full-screen TUI mode, installer chatter goes to a log file so it cannot
+# overwrite the ncurses dialogs. The same text is shown on stderr in CLI mode.
+ui_write() {
+  # Callers pipe already-formatted text here. Use cat so percent signs in disk
+  # paths or messages are never reinterpreted as printf formats, and never
+  # recurse back into this function.
+  if ((TUI_MODE)); then
+    command cat >>"$WREXR_LOG_FILE" 2>/dev/null || true
+  else
+    command cat >&2 || true
+  fi
+}
 
 ui_detect_width() {
   local cols=""
@@ -135,45 +149,46 @@ ui_box() {
   subtitle="$(ui_truncate "${2-}" "$((UI_WIDTH - 6))")"
   inner=$((UI_WIDTH - 4))
   rule="$(ui_repeat "$BOX_H" "$inner")"
-  printf '\n%s%s%s%s%s\n' "$C_EDGE" "$BOX_TL" "$rule" "$BOX_TR" "$C_RESET" >&2
+  printf '\n%s%s%s%s%s\n' "$C_EDGE" "$BOX_TL" "$rule" "$BOX_TR" "$C_RESET" | ui_write
   printf '%s%s %s%s%s%s %s%s\n' \
     "$C_EDGE" "$BOX_H" "$C_BOLD" "$title" "$C_RESET" \
-    "$(ui_pad "$title" "$((inner - 2))")" "$BOX_H" "$C_RESET" >&2
+    "$(ui_pad "$title" "$((inner - 2))")" "$BOX_H" "$C_RESET" | ui_write
   if [[ -n $subtitle ]]; then
     printf '%s%s %s%s%s%s %s%s\n' \
       "$C_EDGE" "$BOX_H" "$C_DIM" "$subtitle" "$C_RESET" \
-      "$(ui_pad "$subtitle" "$((inner - 2))")" "$BOX_H" "$C_RESET" >&2
+      "$(ui_pad "$subtitle" "$((inner - 2))")" "$BOX_H" "$C_RESET" | ui_write
   fi
-  printf '%s%s%s%s%s\n\n' "$C_EDGE" "$BOX_BL" "$rule" "$BOX_BR" "$C_RESET" >&2
+  printf '%s%s%s%s%s\n\n' "$C_EDGE" "$BOX_BL" "$rule" "$BOX_BR" "$C_RESET" | ui_write
 }
 
 ui_section() {
-  printf '\n%s%s %s%s\n' "$C_CYAN" "$UI_BULLET" "$*" "$C_RESET" >&2
+  printf '\n%s%s %s%s\n' "$C_CYAN" "$UI_BULLET" "$*" "$C_RESET" | ui_write
 }
 
 ui_step() {
   local current="$1" total="$2"; shift 2
   printf '%s[%s/%s]%s %s%s%s\n' \
-    "$C_CYAN" "$current" "$total" "$C_RESET" "$C_BOLD" "$*" "$C_RESET" >&2
+    "$C_CYAN" "$current" "$total" "$C_RESET" "$C_BOLD" "$*" "$C_RESET" | ui_write
+  if ((TUI_MODE)); then tui_progress "$current" "$total" "$*"; fi
 }
 
 ui_kv() {
   local key="$1"; shift
-  printf '  %s%-16s%s %s\n' "$C_DIM" "$key" "$C_RESET" "$*" >&2
+  printf '  %s%-16s%s %s\n' "$C_DIM" "$key" "$C_RESET" "$*" | ui_write
 }
 
 ui_menu_item() {
   local number="$1" title="$2" description="${3-}"
   printf '  %s%s%s  %s%s%s\n' \
-    "$C_CYAN" "$number" "$C_RESET" "$C_BOLD" "$title" "$C_RESET" >&2
+    "$C_CYAN" "$number" "$C_RESET" "$C_BOLD" "$title" "$C_RESET" | ui_write
   if [[ -n $description ]]; then
-    printf '      %s%s%s\n' "$C_DIM" "$description" "$C_RESET" >&2
+    printf '      %s%s%s\n' "$C_DIM" "$description" "$C_RESET" | ui_write
   fi
   return 0
 }
 
 ui_success() {
-  printf '\n%s%s %s%s\n' "$C_GREEN" "$UI_BULLET" "$*" "$C_RESET" >&2
+  printf '\n%s%s %s%s\n' "$C_GREEN" "$UI_BULLET" "$*" "$C_RESET" | ui_write
 }
 
 ui_firmware_label() {
@@ -195,6 +210,7 @@ ui_banner() {
 }
 
 ui_summary() {
+  local message
   ui_box 'INSTALLATION PLAN' 'Review before any disk is modified'
   ui_kv 'Target' "$TARGET"
   ui_kv 'Hostname' "$CFG_HOSTNAME"
@@ -202,13 +218,28 @@ ui_summary() {
   ui_kv 'Storage' "${CFG_FS}/${CFG_RAID}, ${#DISK_ROWS[@]} disk(s)"
   ui_kv 'Network' "${NET_MODE}, interface ${NET_IFACE}, bridge ${NET_BRIDGE}"
   ui_kv 'Management' "https://<${CFG_HOSTNAME}-ip>:${CFG_UI_PORT}/"
+  if ((TUI_MODE)); then
+    message="Installation plan\n\n"
+    message+="Target:      ${TARGET}\n"
+    message+="Hostname:    ${CFG_HOSTNAME}\n"
+    message+="Firmware:    $(ui_firmware_label)\n"
+    message+="Storage:     ${CFG_FS}/${CFG_RAID}, ${#DISK_ROWS[@]} disk(s)\n"
+    message+="Network:     ${NET_MODE}, interface ${NET_IFACE}, bridge ${NET_BRIDGE}\n"
+    message+="Management:  https://<${CFG_HOSTNAME}-ip>:${CFG_UI_PORT}/\n\n"
+    message+="No disk has been modified yet."
+    tui_msgbox "$message" || true
+  fi
 }
 
 # ---- logging and error handling -------------------------------------------------
-log_info()  { printf '%s%s wrexr%s %s\n' "$C_GREEN" "$UI_BULLET" "$C_RESET" "$*" >&2; }
-log_warn()  { printf '%s%s warn%s %s\n' "$C_YELLOW" "$UI_BULLET" "$C_RESET" "$*" >&2; }
-log_error() { printf '%s%s error%s %s\n' "$C_RED" "$UI_BULLET" "$C_RESET" "$*" >&2; }
-die() { log_error "$*"; exit 1; }
+log_info()  { printf '%s%s wrexr%s %s\n' "$C_GREEN" "$UI_BULLET" "$C_RESET" "$*" | ui_write; }
+log_warn()  { printf '%s%s warn%s %s\n' "$C_YELLOW" "$UI_BULLET" "$C_RESET" "$*" | ui_write; }
+log_error() { printf '%s%s error%s %s\n' "$C_RED" "$UI_BULLET" "$C_RESET" "$*" | ui_write; }
+die() {
+  if ((TUI_MODE)); then tui_error "$*"; fi
+  log_error "$*"
+  exit 1
+}
 
 on_error() {
   local line="$1"
@@ -234,18 +265,22 @@ cmd_string() {
 # Every external command with side effects goes through run() / write_file().
 run() {
   if ((DRY_RUN)); then
-    printf '  [dry-run] %s\n' "$(cmd_string "$@")" >&2
+    printf '  [dry-run] %s\n' "$(cmd_string "$@")" | ui_write
     return 0
   fi
-  if ((VERBOSE)); then printf '  [run] %s\n' "$(cmd_string "$@")" >&2; fi
-  "$@"
+  if ((VERBOSE)); then printf '  [run] %s\n' "$(cmd_string "$@")" | ui_write; fi
+  if ((TUI_MODE)); then
+    "$@" >>"$WREXR_LOG_FILE" 2>&1
+  else
+    "$@"
+  fi
 }
 
 write_file() {
   local path="$1" content="$2" mode="${3-}" mode_note=""
   if [[ -n $mode ]]; then mode_note=" (mode ${mode})"; fi
   if ((DRY_RUN)); then
-    printf '  [dry-run] write %s bytes to %q%s\n' "${#content}" "$path" "$mode_note" >&2
+    printf '  [dry-run] write %s bytes to %q%s\n' "${#content}" "$path" "$mode_note" | ui_write
     return 0
   fi
   run mkdir -p -- "$(dirname -- "$path")"
@@ -256,7 +291,7 @@ write_file() {
 append_file() {
   local path="$1" content="$2"
   if ((DRY_RUN)); then
-    printf '  [dry-run] append text to %q\n' "$path" >&2
+    printf '  [dry-run] append text to %q\n' "$path" | ui_write
     return 0
   fi
   run mkdir -p -- "$(dirname -- "$path")"
@@ -270,12 +305,16 @@ chroot_script() {
   shift
   script="$(cat)"
   if ((DRY_RUN)); then
-    printf '  [dry-run] chroot %q /usr/bin/env <vars> /bin/bash -s   # %s\n' "$TARGET" "$label" >&2
-    printf '%s\n' "$script" | sed 's/^/      | /' >&2
+    printf '  [dry-run] chroot %q /usr/bin/env <vars> /bin/bash -s   # %s\n' "$TARGET" "$label" | ui_write
+    printf '%s\n' "$script" | sed 's/^/      | /' | ui_write
     return 0
   fi
-  if ((VERBOSE)); then printf '  [run] chroot script: %s\n' "$label" >&2; fi
-  printf '%s\n' "$script" | chroot "$TARGET" /usr/bin/env "$@" /bin/bash -s
+  if ((VERBOSE)); then printf '  [run] chroot script: %s\n' "$label" | ui_write; fi
+  if ((TUI_MODE)); then
+    printf '%s\n' "$script" | chroot "$TARGET" /usr/bin/env "$@" /bin/bash -s >>"$WREXR_LOG_FILE" 2>&1
+  else
+    printf '%s\n' "$script" | chroot "$TARGET" /usr/bin/env "$@" /bin/bash -s
+  fi
 }
 
 # ---- validated-config readers ---------------------------------------------------
@@ -370,26 +409,46 @@ read_config_globals() {
 # ---- interactive configuration --------------------------------------------------
 prompt_default() {
   local prompt="$1" def="${2-}" answer=""
-  printf '%s%s%s %s' "$C_CYAN" "$UI_ARROW" "$C_RESET" "$prompt" >&2
-  if [[ -n $def ]]; then printf ' [%s]' "$def" >&2; fi
-  printf '%s:%s ' "$C_DIM" "$C_RESET" >&2
+  printf '%s%s%s %s' "$C_CYAN" "$UI_ARROW" "$C_RESET" "$prompt" | ui_write
+  if [[ -n $def ]]; then printf ' [%s]' "$def" | ui_write; fi
+  printf '%s:%s ' "$C_DIM" "$C_RESET" | ui_write
   IFS= read -r answer || true
   printf '%s' "${answer:-$def}"
 }
 
 prompt_secret() {
   local prompt="$1" answer=""
-  printf '%s: ' "$prompt" >&2
+  printf '%s: ' "$prompt" | ui_write
   IFS= read -rs answer || true
-  printf '\n' >&2
+  printf '\n' | ui_write
   [[ $answer != *:* && $answer != *$'\n'* ]] || die "passwords must not contain ':' or newlines"
   printf '%s' "$answer"
+}
+
+# Shared prompts for both the full-screen and line-oriented interfaces.
+ask_input() {
+  if ((TUI_MODE)); then tui_input "$@"; else prompt_default "$@"; fi
+}
+
+ask_secret() {
+  if ((TUI_MODE)); then tui_password "$1"; else prompt_secret "$1"; fi
 }
 
 interactive_standard() {
   ui_section 'Detecting available disks'
   disk_select_standard
-  disk_print_table
+  if ((TUI_MODE)); then
+    local i message=$'Detected disks:\n\n'
+    for i in "${!DISK_PATHS[@]}"; do
+      message+=$'  '"${DISK_PATHS[i]}  ${DISK_HUMAN[i]}  ${DISK_MODEL[i]}"$'\n'
+    done
+    message+=$'\n'"System disk: ${DISK_ROWS[0]%%$'\t'*}"$'\n'
+    message+="Filesystem: zfs / RAID: ${CFG_RAID}"$'\n'
+    message+=$'\n'"DHCP, UTC, keyboard us, management port 8443."
+    tui_msgbox "$message" || true
+  else
+    disk_print_table
+  fi
   CFG_HOSTNAME="wrexr"; CFG_TIMEZONE="UTC"; CFG_KEYBOARD="us"
   CFG_FS="zfs"; CFG_SWAP="true"; CFG_SWAP_SIZE="4G"
   NET_MODE="dhcp"; NET_IFACE="auto"; NET_BRIDGE="br0"
@@ -399,6 +458,58 @@ interactive_standard() {
   interactive_credentials
 }
 
+interactive_advanced_tui() {
+  local i role system_on data_on parity_on cache_on
+  DISK_ROWS=()
+  for i in "${!DISK_PATHS[@]}"; do
+    if ((i == 0)); then system_on=on; data_on=off; else system_on=off; data_on=on; fi
+    parity_on=off; cache_on=off
+    role="$(tui_radiolist "Role for ${DISK_PATHS[i]} (${DISK_HUMAN[i]}, ${DISK_MODEL[i]})" \
+      system 'System disk (root pool)' "$system_on" \
+      data 'Data disk (storage pool)' "$data_on" \
+      parity 'Parity disk (RAIDZ / RAID5 / RAID6)' "$parity_on" \
+      cache 'Cache disk (ZFS L2ARC)' "$cache_on")" || die 'disk role selection cancelled'
+    case "$role" in system|data|parity|cache) ;; *) die "invalid role: ${role}" ;; esac
+    DISK_ROWS+=("$(printf '%s\t%s\ttrue' "${DISK_PATHS[i]}" "$role")")
+  done
+
+  CFG_HOSTNAME="$(tui_input 'Hostname' wrexr)" || die 'hostname entry cancelled'
+  CFG_FS="$(tui_radiolist 'Root filesystem' \
+    zfs 'ZFS (recommended)' on \
+    btrfs 'Btrfs' off \
+    ext4 'ext4 (simple)' off)" || die 'filesystem selection cancelled'
+  CFG_RAID="$(tui_radiolist 'RAID level' \
+    single 'Single disk' on \
+    mirror 'Mirror' off \
+    raidz1 'RAIDZ1 / RAID5 (3+ disks)' off \
+    raidz2 'RAIDZ2 / RAID6 (4+ disks)' off \
+    raidz10 'Striped mirrors (4+ disks)' off)" || die 'RAID selection cancelled'
+  CFG_SWAP="$(tui_radiolist 'Create a swap partition?' \
+    true 'Yes' on \
+    false 'No' off)" || die 'swap selection cancelled'
+  CFG_SWAP_SIZE="$(tui_input 'Swap size' 4G)" || die 'swap size entry cancelled'
+  CFG_KEYBOARD="$(tui_input 'Keyboard layout' us)" || die 'keyboard entry cancelled'
+  CFG_TIMEZONE="$(tui_input 'Timezone' UTC)" || die 'timezone entry cancelled'
+  CFG_UI_PORT="$(tui_input 'Management UI port' 8443)" || die 'port entry cancelled'
+
+  NET_MODE="$(tui_radiolist 'Network mode' \
+    dhcp 'DHCP (automatic)' on \
+    static 'Static IPv4' off)" || die 'network mode selection cancelled'
+  NET_IFACE="$(tui_input 'Management interface (auto to detect)' auto)" || die 'interface entry cancelled'
+  NET_BRIDGE="$(tui_input 'Bridge name' br0)" || die 'bridge entry cancelled'
+  if [[ $NET_MODE == static ]]; then
+    NET_ADDRESS="$(tui_input 'Static IPv4 address' 192.168.1.20)" || die 'address entry cancelled'
+    NET_NETMASK="$(tui_input 'Netmask' 255.255.255.0)" || die 'netmask entry cancelled'
+    NET_GATEWAY="$(tui_input 'Gateway' 192.168.1.1)" || die 'gateway entry cancelled'
+    local dns
+    dns="$(tui_input 'DNS servers (space separated)' 1.1.1.1)" || die 'DNS entry cancelled'
+    read -r -a NET_DNS <<< "$dns"
+  fi
+  local kopts
+  kopts="$(tui_input 'Extra kernel options (space separated)' '')" || die 'kernel options entry cancelled'
+  read -r -a KERNEL_OPTIONS <<< "$kopts"
+}
+
 interactive_advanced() {
   ui_section 'Detecting available disks'
   disk_enumerate
@@ -406,7 +517,7 @@ interactive_advanced() {
   disk_print_table
   local sel="" piece idx role
   printf '  %sAssign roles: %s1=system,2=data,3=parity,4=cache%s\n' \
-    "$C_DIM" "$C_CYAN" "$C_RESET" >&2
+    "$C_DIM" "$C_CYAN" "$C_RESET" | ui_write
   sel="$(prompt_default 'Disks and roles' '')"
   [[ -n $sel ]] || die "at least one disk must be assigned"
   DISK_ROWS=()
@@ -451,11 +562,11 @@ interactive_advanced() {
 }
 
 interactive_credentials() {
-  AUTH_PASSWORD="$(prompt_secret 'Root password (Enter for SSH keys only)')"
+  AUTH_PASSWORD="$(ask_secret 'Root password (leave empty to use SSH keys)')"
   AUTH_SSH_KEYS=()
   if [[ -z $AUTH_PASSWORD ]]; then
     local keyfile
-    keyfile="$(prompt_default 'Path to SSH public key file (optional)' '')"
+    keyfile="$(ask_input 'Path to SSH public key file (optional)' '')"
     if [[ -n $keyfile ]]; then
       [[ -f $keyfile ]] || die "SSH key file not found: ${keyfile}"
       mapfile -t AUTH_SSH_KEYS < "$keyfile"
@@ -469,7 +580,7 @@ interactive_users_shares() {
   USER_ROWS=(); SHARE_ROWS=()
   ui_section 'Optional users and shares'
   local spec="" IFS_SAVE="$IFS"
-  spec="$(prompt_default 'Extra users (name:groups:shell, comma separated)' '')"
+  spec="$(ask_input 'Extra users (name:groups:shell, comma separated)' '')"
   if [[ -n $spec ]]; then
     local entry name groups shell
     IFS=',' read -r -a entries <<< "$spec"
@@ -479,7 +590,7 @@ interactive_users_shares() {
       USER_ROWS+=("$(printf '%s\t%s\t%s\t\t' "$name" "${groups//,/'|'}" "${shell:-/bin/bash}")")
     done
   fi
-  spec="$(prompt_default 'Shares (name:protocol:path, comma separated)' '')"
+  spec="$(ask_input 'Shares (name:protocol:path, comma separated)' '')"
   if [[ -n $spec ]]; then
     local entry name protocol path
     IFS=',' read -r -a entries <<< "$spec"
@@ -571,21 +682,39 @@ process.stdout.write(JSON.stringify(o, null, 2));
 '
 }
 
+run_advanced_config() {
+  if ((TUI_MODE)); then
+    interactive_advanced_tui
+    interactive_users_shares
+  else
+    interactive_advanced
+  fi
+}
+
 interactive_config() {
   ui_banner 'guided mode'
-  ui_section 'Choose an install path'
-  ui_menu_item '1)' 'Standard install' \
-    'Automatic disks, DHCP, UTC, ZFS and sensible defaults.'
-  ui_menu_item '2)' 'Advanced options' \
-    'Manual disks, filesystem, RAID, network, users and shares.'
-  if ((ADVANCED)); then
-    interactive_advanced
+  local choice=""
+  if ((TUI_MODE)); then
+    tui_msgbox "Welcome to the WrexrOS installer.\n\nChoose Standard for automatic disks and defaults, or Advanced to configure disks, RAID, network and accounts.\n\nThe selected disks will be erased." || true
+    choice="$(tui_menu 'Choose an install path' \
+      1 'Standard install - automatic disks, DHCP, UTC and ZFS' \
+      2 'Advanced options - disks, RAID, network, users and shares')" \
+      || die "install path selection cancelled"
   else
-    local choice
-    choice="$(prompt_default 'Choose an install path' 1)"
+    ui_section 'Choose an install path'
+    ui_menu_item '1)' 'Standard install' \
+      'Automatic disks, DHCP, UTC, ZFS and sensible defaults.'
+    ui_menu_item '2)' 'Advanced options' \
+      'Manual disks, filesystem, RAID, network, users and shares.'
+  fi
+
+  if ((ADVANCED)); then
+    run_advanced_config
+  else
+    [[ -n $choice ]] || choice="$(prompt_default 'Choose an install path' 1)"
     case "$choice" in
       1) interactive_standard ;;
-      2) interactive_advanced ;;
+      2) run_advanced_config ;;
       *) die "invalid choice: ${choice}" ;;
     esac
   fi
@@ -611,6 +740,8 @@ Options:
   --verbose                Print executed commands as well as progress messages.
   --color                  Force coloured terminal output even when redirected.
   --no-color               Plain ASCII output for logs, serial consoles and scripts.
+  --tui                    Force the full-screen ncurses installer interface.
+  --text                   Force the line-oriented installer interface.
   --version                Print installer version and exit.
   --help                   Show this help.
 
@@ -638,6 +769,8 @@ parse_args() {
       --verbose) VERBOSE=1 ;;
       --color) UI_COLOR_MODE=always ;;
       --no-color) UI_COLOR_MODE=never ;;
+      --tui) WREXR_TUI=always ;;
+      --text) WREXR_TUI=never ;;
       --version) printf 'wrexr-installer %s\n' "$WREXR_VERSION"; exit 0 ;;
       --help|-h) usage; exit 0 ;;
       *) die "unknown option: $1 (try --help)" ;;
@@ -684,6 +817,9 @@ main() {
   parse_args "$@"
   ui_init
   WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/wrexr-install.XXXXXX")"
+  WREXR_LOG_FILE="${WORKDIR}/installer.log"
+  tui_init
+  if ((TUI_MODE)); then : >"$WREXR_LOG_FILE" 2>/dev/null || true; fi
   preflight_common
 
   if [[ $WREXR_MODE == interactive ]]; then
@@ -732,6 +868,8 @@ main() {
 }
 
 # ---- sourced implementation files ----------------------------------------------
+# shellcheck source=functions/tui.sh
+source "${SCRIPT_DIR}/functions/tui.sh"
 # shellcheck source=functions/disk.sh
 source "${SCRIPT_DIR}/functions/disk.sh"
 # shellcheck source=functions/network.sh

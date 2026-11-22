@@ -45,4 +45,5 @@ isc-dhcp-client
 resolvconf
 tzdata
 console-setup
+whiptail
 xz-utils

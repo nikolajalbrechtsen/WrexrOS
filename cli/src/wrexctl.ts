@@ -25,7 +25,7 @@ import {
 } from './format.ts';
 import { connect, type WSClient } from './ws-client.ts';
 
-const CLI_VERSION = '0.1.5';
+const CLI_VERSION = '0.1.6';
 const DEFAULT_TIMEOUT_MS = 15000;
 const SETTINGS_SECTIONS = new Set(['general', 'network', 'storage', 'access', 'updates', 'advanced', 'raw']);
 

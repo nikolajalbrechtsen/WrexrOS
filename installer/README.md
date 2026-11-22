@@ -19,6 +19,8 @@ The installer adapts to the console it is running on:
 * Terminal width is detected from `/dev/tty`, `COLUMNS` or `tput`; content is clipped to stay readable on 80-column displays.
 * `--no-color` (or `NO_COLOR=1`, `WREXR_UI_COLOR=never`) forces plain output. `--color` forces rich output.
 * UEFI and legacy BIOS are detected and shown in the banner. If installation media was booted with `console=ttyS...`, that console is carried into the installed kernel and GRUB.
+* When `whiptail` and a real terminal are available, the guided flow uses a full-screen ncurses interface instead of line prompts. It includes menus, radiolists, input/password boxes, an installation-plan review, progress dialogs and a final completion dialog.
+* `--tui` forces the full-screen interface and `--text` forces line prompts. `WREXR_TUI=always|never|auto` provides the same control through the environment. Serial/CI sessions without a usable terminal automatically stay in text mode.
 
 ## Interactive paths
 

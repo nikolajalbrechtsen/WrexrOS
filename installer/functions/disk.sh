@@ -67,10 +67,14 @@ disk_enumerate() {
 
   # Never offer a disk that is already in use by the running live system. This
   # includes mounted partitions, loop-backed live media and their parent disks.
+  # Do not use `lsblk -e loop,rom`: several util-linux releases only accept
+  # numeric major numbers there and the command then fails silently, hiding
+  # every disk. Filter by TYPE in the shell instead.
   while read -r name; do
     [[ -n ${name:-} ]] || continue
     disk_mark_tree_unsafe "$name"
-  done < <(lsblk -n -o NAME,MOUNTPOINT -e rom 2>/dev/null | while read -r n m; do
+  done < <(lsblk -n -o NAME,TYPE,MOUNTPOINT 2>/dev/null | while read -r n type m; do
+    [[ ${type:-} == loop || ${type:-} == rom ]] && continue
     [[ -n ${m:-} ]] && printf '%s\n' "$n"
   done || true)
 
@@ -88,7 +92,7 @@ disk_enumerate() {
     [[ -n ${backing:-} ]] && disk_unsafe_from_source "$backing"
   done < <(losetup -n -o NAME,BACK-FILE 2>/dev/null || true)
 
-  cmdline="$(tr '\n' ' ' </proc/cmdline 2>/dev/null || true)"
+  cmdline="$(tr '\n' ' ' 2>/dev/null </proc/cmdline || true)"
   for token in $cmdline; do
     case "$token" in
       live-media=*) disk_unsafe_from_source "${token#live-media=}" ;;
@@ -100,13 +104,14 @@ disk_enumerate() {
     [[ -n ${name:-} && ${type:-} == disk ]] || continue
     [[ -n ${unsafe[$name]:-} ]] && continue
     bytes_map["$name"]="${bytes:-0}"
-  done < <(lsblk -b -d -n -o NAME,SIZE,TYPE -e loop,rom 2>/dev/null || true)
+  done < <(lsblk -b -d -n -o NAME,SIZE,TYPE 2>/dev/null || true)
 
-  while read -r name human model; do
+  while read -r name type human model; do
     [[ -n ${name:-} ]] || continue
+    [[ ${type:-} == loop || ${type:-} == rom ]] && continue
     human_map["$name"]="${human:-?}"
     model_map["$name"]="${model:-unknown}"
-  done < <(lsblk -d -n -o NAME,SIZE,MODEL -e loop,rom 2>/dev/null || true)
+  done < <(lsblk -d -n -o NAME,TYPE,SIZE,MODEL 2>/dev/null || true)
 
   for name in "${!bytes_map[@]}"; do
     DISK_PATHS+=("/dev/$name")
@@ -292,7 +297,11 @@ disk_confirm_wipe() {
     return 0
   fi
   local answer=""
-  read -r -p "Type 'WIPE MY DISKS' to continue: " answer || die "confirmation aborted"
+  if ((TUI_MODE)); then
+    answer="$(tui_input "Type 'WIPE MY DISKS' to continue" '')" || die "confirmation cancelled"
+  else
+    read -r -p "Type 'WIPE MY DISKS' to continue: " answer || die "confirmation aborted"
+  fi
   [[ $answer == "WIPE MY DISKS" ]] || die "confirmation did not match; no disk was touched"
 }
 
@@ -385,13 +394,14 @@ disk_partition_system() {
 
 # Append a stable fstab entry (resolved by UUID when the device exists).
 fstab_add() {
-  local dev="$1" mnt="$2" fstype="$3" opts="$4" pass="$5" uuid="" source="$dev"
+  local dev="$1" mnt="$2" fstype="$3" opts="$4" pass="$5" uuid="" source
+  source="$dev"
   if ((!DRY_RUN)); then
     uuid="$(blkid -s UUID -o value "$dev" 2>/dev/null || true)"
     [[ -n $uuid ]] && source="UUID=$uuid"
   fi
   local line="${source}  ${mnt}  ${fstype}  ${opts}  0 ${pass}"
-  if ((DRY_RUN)); then printf '  [dry-run] fstab: %s\n' "$line" >&2; fi
+  if ((DRY_RUN)); then printf '  [dry-run] fstab: %s\n' "$line" | ui_write; fi
   FSTAB_ENTRIES+=("$line")
 }
 

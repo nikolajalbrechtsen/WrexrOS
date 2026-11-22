@@ -44,7 +44,7 @@ detect_version() {
       [[ -n $value ]] && break
     fi
   done
-  printf '%s' "${value:-${WREXR_VERSION:-0.1.5}}"
+  printf '%s' "${value:-${WREXR_VERSION:-0.1.6}}"
 }
 
 detect_ip() {
