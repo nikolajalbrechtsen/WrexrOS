@@ -23,17 +23,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       grub-efi-amd64-bin \
       jq \
       sudo \
+      xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Node 24 is required for the TypeScript-stripping backend and the config validator.
-# Fall back to Debian's nodejs if Nodesource is unreachable in the build network.
-RUN if curl -fsSL https://deb.nodesource.com/setup_24.x -o /tmp/nodesource.sh; then \
-      bash /tmp/nodesource.sh && apt-get install -y --no-install-recommends nodejs; \
-    else \
-      apt-get update && apt-get install -y --no-install-recommends nodejs; \
-    fi \
-    && rm -f /tmp/nodesource.sh \
-    && rm -rf /var/lib/apt/lists/*
+# The builder does not need a system Node.js. build-iso.sh downloads the pinned
+# Node 24 runtime directly and embeds it in the image, so no external apt repo
+# is required here.
 
 WORKDIR /build
 COPY . /build/wrexr

@@ -52,6 +52,9 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Unattended `network.firewall.allowTcp` now defaults to the configured `uiPort` (plus SSH),
   keeping custom management ports reachable.
 - The dead “Boot existing system” menu entry was replaced with an honest live-shell entry.
+- ISO builds no longer depend on the Nodesource apt repository; the pinned Node 24 runtime is
+  downloaded directly and `xz-utils` is installed explicitly. CI now reports container build
+  failures as visible annotations.
 
 ### Security
 - A trust key installed at `/etc/wrexr/trusted-updates.gpg` still refuses unsigned updates.

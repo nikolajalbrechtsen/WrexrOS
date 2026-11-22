@@ -71,12 +71,26 @@ jobs:
         run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
       - name: Build ISO in container
         run: |
+          set -o pipefail
           mkdir -p out
-          docker build -t wrexros-iso-builder -f packaging/Dockerfile .
-          docker run --rm --privileged \
-            -v "$PWD/out":/build/out \
-            -e WREXR_VERSION="$(cat VERSION)" \
-            wrexros-iso-builder
+          if ! docker build --progress=plain -t wrexros-iso-builder -f packaging/Dockerfile . \
+              2>&1 | tee /tmp/wrexr-docker-build.log; then
+            echo "::error::Docker image build failed; last lines:"
+            tail -n 80 /tmp/wrexr-docker-build.log | while IFS= read -r line; do
+              printf '::error::%s\n' "$line"
+            done
+            exit 1
+          fi
+          if ! docker run --rm --privileged \
+              -v "$PWD/out":/build/out \
+              -e WREXR_VERSION="$(cat VERSION)" \
+              wrexros-iso-builder 2>&1 | tee /tmp/wrexr-docker-run.log; then
+            echo "::error::ISO build container failed; last lines:"
+            tail -n 120 /tmp/wrexr-docker-run.log | while IFS= read -r line; do
+              printf '::error::%s\n' "$line"
+            done
+            exit 1
+          fi
       - name: Download web UI build
         uses: actions/download-artifact@v4
         with:

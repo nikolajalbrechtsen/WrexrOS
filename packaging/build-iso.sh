@@ -223,6 +223,7 @@ install_node_runtime() {
   command -v curl >/dev/null || die "curl is required to fetch the Node.js runtime"
   command -v sha256sum >/dev/null || die "sha256sum is required to verify the Node.js runtime"
   command -v tar >/dev/null || die "tar is required to unpack the Node.js runtime"
+  command -v xz >/dev/null || die "xz is required to unpack the Node.js runtime"
 
   log_info "Installing Node.js ${NODE_RUNTIME_VERSION} runtime in the image"
   if [[ ! -f $cache ]]; then
@@ -240,7 +241,9 @@ install_node_runtime() {
 
   rm -rf -- "$node_dir"
   mkdir -p "$node_dir"
-  tar -xJf "$cache" -C "$node_dir" --strip-components=1
+  if ! tar -xJf "$cache" -C "$node_dir" --strip-components=1; then
+    die "failed to unpack ${NODE_RUNTIME_ARCHIVE}"
+  fi
   for bin in node npm npx corepack; do
     ln -sfn "/opt/wrexr-node/bin/${bin}" "${bin_dir}/${bin}"
   done
