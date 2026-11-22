@@ -1,6 +1,6 @@
 # WrexrOS architecture
 
-This document describes the 0.1.2 design. It is intentionally concrete: paths, processes,
+This document describes the 0.1.3 design. It is intentionally concrete: paths, processes,
 protocols and failure boundaries are specified so contributors can reason about the system
 without guessing.
 
@@ -142,4 +142,4 @@ UI (VM create form)
 ## 10. Roadmap boundaries
 
 HA failover and multi-node clustering are prepared in the data model (`cluster_nodes`,
-replication jobs) but not a 0.1.2 guarantee. See `docs/ROADMAP.md`.
+replication jobs) but not a 0.1.3 guarantee. See `docs/ROADMAP.md`.

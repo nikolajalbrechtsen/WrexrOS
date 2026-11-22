@@ -74,6 +74,15 @@ try {
   if (build.includes('wrexr.install=standard"')) {
     problems.push('packaging/build-iso.sh still sets a global wrexr.install=standard default');
   }
+  if (build.includes('wrexrd.service wrexr-console.service')) {
+    problems.push('packaging/build-iso.sh still enables appliance units in the live image');
+  }
+  if (build.includes('timers.target.wants/wrexr-updater.timer')) {
+    problems.push('packaging/build-iso.sh still enables the updater timer in the live image');
+  }
+  if (!build.includes('/etc/systemd/system/docker.service')) {
+    problems.push('packaging/build-iso.sh does not mask Docker in the live image');
+  }
 } catch (error) {
   problems.push(`cannot read packaging/build-iso.sh: ${error.message}`);
 }

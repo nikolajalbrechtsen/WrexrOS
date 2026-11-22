@@ -41,7 +41,7 @@ read_version() {
   if [[ -r ${REPO_ROOT}/VERSION ]]; then
     VERSION="$(head -n 1 "${REPO_ROOT}/VERSION" | tr -d '\r\n')"
   else
-    VERSION="0.1.2"
+    VERSION="0.1.3"
     log_warn "no ../VERSION file found; using ${VERSION} (set WREXR_VERSION to override)"
   fi
   [[ -n $VERSION ]] || die "version string is empty"
@@ -188,16 +188,24 @@ prepare_config() {
     "${BUILD_DIR}/config/includes.chroot/usr/lib/systemd/system/wrexr-banner.service"
   install -m 0644 "${REPO_ROOT}/boot/issue" "${BUILD_DIR}/config/includes.chroot/etc/issue"
 
-  # Enable the appliance units in the live image (symlinks live in /etc/systemd).
-  # The first-boot wizard unit is intentionally not enabled here: it belongs on
-  # the installed system and should not generate TLS keys in the live overlay.
+  # Only the installer runs in the live image. Appliance units are enabled by
+  # the installer on the target system: the live root has no wrexr service
+  # account, persistent state or TLS certificate, so wrexrd can only fail there.
+  # The first-boot wizard is likewise installed-system only.
   local wants="${BUILD_DIR}/config/includes.chroot/etc/systemd/system/multi-user.target.wants"
-  for unit in wrexrd.service wrexr-console.service wrexr-banner.service \
-              wrexr-live-install.service; do
-    ln -sfn "/usr/lib/systemd/system/${unit}" "${wants}/${unit}"
-  done
-  ln -sfn /usr/lib/systemd/system/wrexr-updater.timer \
-    "${BUILD_DIR}/config/includes.chroot/etc/systemd/system/timers.target.wants/wrexr-updater.timer"
+  ln -sfn /usr/lib/systemd/system/wrexr-live-install.service \
+    "${wants}/wrexr-live-install.service"
+
+  # Docker's storage-driver probe is meaningless on the overlay-backed live
+  # root and logs overlayfs "upperdir not supported" warnings. Mask it in the
+  # live session; installed systems manage Docker through their own units.
+  ln -sfn /dev/null "${BUILD_DIR}/config/includes.chroot/etc/systemd/system/docker.service"
+  ln -sfn /dev/null "${BUILD_DIR}/config/includes.chroot/etc/systemd/system/docker.socket"
+
+  # The installed-system banner would advertise a management IP before the
+  # installer has configured one. Keep the live console honest instead.
+  printf 'WrexrOS %s installer\n\n' "$VERSION" \
+    > "${BUILD_DIR}/config/includes.chroot/etc/issue"
 
   printf '%s\n' "$VERSION" > "${BUILD_DIR}/config/includes.chroot/etc/wrexr/version"
   printf '%s\n' "$VERSION" > "${BUILD_DIR}/config/includes.chroot/opt/wrexr/VERSION"

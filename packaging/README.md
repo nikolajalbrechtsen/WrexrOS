@@ -34,7 +34,7 @@ The script refuses to run as root unless `--allow-root` is given or
 ./packaging/build-iso.sh --output /srv/iso --allow-root
 ```
 
-The version is read from the repository root `VERSION` file (fallback: `0.1.2`,
+The version is read from the repository root `VERSION` file (fallback: `0.1.3`,
 override with `WREXR_VERSION`). Results:
 
 ```

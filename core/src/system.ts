@@ -76,9 +76,9 @@ export async function commandAvailable(command: string): Promise<boolean> {
 export function coreVersion(cfg: Config = config): string {
   try {
     const text = fs.readFileSync(cfg.versionPath, 'utf8').trim();
-    return text || '0.1.2';
+    return text || '0.1.3';
   } catch {
-    return '0.1.2';
+    return '0.1.3';
   }
 }
 

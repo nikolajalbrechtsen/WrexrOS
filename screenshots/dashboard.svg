@@ -14,7 +14,7 @@
     <text x="54" y="450">▸  Terminal</text><text x="54" y="496">↻  Updates</text>
   </g>
   <text x="28" y="860" fill="#3ecf8e" font-size="11">● Online</text>
-  <text x="28" y="878" fill="#8b9bab" font-size="10">wrexr-node1 · v0.1.2</text>
+  <text x="28" y="878" fill="#8b9bab" font-size="10">wrexr-node1 · v0.1.3</text>
 
   <text x="272" y="46" fill="#e6edf3" font-size="22" font-weight="650">Dashboard</text>
   <text x="272" y="66" fill="#8b9bab" font-size="12">System overview · live · 2s refresh</text>

@@ -11,6 +11,23 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Alert delivery backends (email, webhook, Pushover) and backup replication.
 - Plugin marketplace and localization packs.
 
+## [0.1.3] - 2026-11-22
+
+### Fixed
+- The live installer image no longer enables `wrexrd.service`, `wrexr-console.service`,
+  `wrexr-banner.service` or `wrexr-updater.timer`. Those units belong to installed systems; the
+  live root has no `wrexr` service account, persistent state or TLS certificate, so `wrexrd`
+  failed repeatedly and printed an unusable `https://<unconfigured>:8443/` banner during a
+  Standard or Advanced install.
+- Docker's storage-driver probe is masked in the live image. The overlay-backed live root is not
+  a valid Docker upperdir, which produced harmless but alarming `overlayfs: ... not supported as
+  upperdir` kernel messages while the installer prompt was waiting.
+- The live console now identifies itself as the installer instead of advertising a management URL
+  that only exists after installation. Installed systems still show the management URL and clean
+  login prompt.
+- Release consistency checks now fail if appliance units are re-enabled in the live image or
+  Docker is no longer masked there.
+
 ## [0.1.2] - 2026-11-22
 
 ### Fixed
@@ -116,7 +133,8 @@ this release establishes the full foundation.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.
 - Signed update verification; unsigned assets refused when a trust key is installed.
 
-[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.3
 [0.1.2]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.2
 [0.1.1]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.1
 [0.1.0]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.0
