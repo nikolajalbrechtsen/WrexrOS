@@ -13,7 +13,7 @@ API, or the `wrexctl` CLI.
 
 | | |
 | --- | --- |
-| Version | `0.1.4` (see [CHANGELOG.md](CHANGELOG.md)) |
+| Version | `0.1.5` (see [CHANGELOG.md](CHANGELOG.md)) |
 | License | MIT (see [LICENSE](LICENSE)) |
 | Base | Debian 12 "bookworm", amd64 |
 | Management UI | `https://<IP>:8443` (TLS by default) |
@@ -21,7 +21,7 @@ API, or the `wrexctl` CLI.
 
 ---
 
-## What works in 0.1.4
+## What works in 0.1.5
 
 * **Appliance boot** — dynamic console banner with management IP + UI port, kiosk option,
   idempotent first-boot service.
@@ -48,7 +48,7 @@ API, or the `wrexctl` CLI.
   release assets with checksums and optional GPG signatures.
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for stretch goals (HA failover, clustering, kiosk
-extensions, plugin marketplace) and what is intentionally out of scope for 0.1.4.
+extensions, plugin marketplace) and what is intentionally out of scope for 0.1.5.
 
 ---
 
@@ -63,7 +63,7 @@ extensions, plugin marketplace) and what is intentionally out of scope for 0.1.4
 5. Reboot. The console prints:
 
    ```text
-   WrexrOS 0.1.4
+   WrexrOS 0.1.5
    https://192.168.1.24:8443
 
    wrexros login:
@@ -178,7 +178,7 @@ the same checker:
 
 ```bash
 node updater/check-update.mjs --channel stable --json
-# { "current": "0.1.4", "latest": "0.1.4", "updateAvailable": false, ... }
+# { "current": "0.1.5", "latest": "0.1.5", "updateAvailable": false, ... }
 ```
 
 Releases are created by CI with attached ISO, `SHA256SUMS`, and an optional detached GPG

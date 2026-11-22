@@ -6,7 +6,7 @@ set -Eeuo pipefail
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Prefer the version stamped next to the installer (/opt/wrexr/VERSION in the ISO),
 # then the installed system version, then a conservative fallback.
-readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.4)}"
+readonly WREXR_VERSION="${WREXR_VERSION:-$(cat "${SCRIPT_DIR}/../VERSION" 2>/dev/null || cat /etc/wrexr/version 2>/dev/null || echo 0.1.5)}"
 readonly TARGET="${WREXR_TARGET:-/target}"
 readonly VALIDATOR="${SCRIPT_DIR}/validate-config.mjs"
 readonly SCHEMA="${SCRIPT_DIR}/unattended.schema.json"
@@ -47,10 +47,167 @@ AUTH_PASSWORD=""
 declare -a KERNEL_OPTIONS=() DISK_ROWS=() NET_DNS=() FW_PORTS=() AUTH_SSH_KEYS=()
 declare -a USER_ROWS=() SHARE_ROWS=()
 
+# ---- terminal UI ----------------------------------------------------------------
+# The same installer runs on VGA, serial consoles, noVNC, SSH and CI logs.
+# Colour and Unicode are capability-detected; --no-color, NO_COLOR and
+# WREXR_UI_COLOR=never keep logs clean while --color forces a rich terminal.
+UI_COLOR=0
+UI_UNICODE=0
+UI_WIDTH=80
+UI_COLOR_MODE="${WREXR_UI_COLOR:-auto}"
+C_RESET='' C_BOLD='' C_DIM='' C_CYAN='' C_GREEN='' C_YELLOW='' C_RED='' C_EDGE=''
+BOX_TL='+' BOX_TR='+' BOX_BL='+' BOX_BR='+' BOX_H='-' UI_BULLET='*' UI_ARROW='->' UI_SEP='|'
+
+ui_detect_width() {
+  local cols=""
+  if [[ -r /dev/tty ]]; then
+    read -r _ cols < <(stty size 2>/dev/null </dev/tty) || true
+  fi
+  [[ ${cols:-} =~ ^[0-9]+$ ]] || cols="${COLUMNS:-}"
+  if ! [[ ${cols:-} =~ ^[0-9]+$ ]]; then
+    cols="$(tput cols 2>/dev/null || true)"
+  fi
+  [[ ${cols:-} =~ ^[0-9]+$ ]] || cols=80
+  if ! ((cols >= 40 && cols <= 120)); then cols=80; fi
+  UI_WIDTH=$cols
+}
+
+ui_init() {
+  local locale="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" cmdline="" serial=0
+  if [[ -n ${NO_COLOR:-} ]]; then UI_COLOR_MODE=never; fi
+  ui_detect_width
+
+  case "$UI_COLOR_MODE" in
+    always|force|1) UI_COLOR=1 ;;
+    never|off|0) UI_COLOR=0 ;;
+    auto|*)
+      if [[ -t 2 && ${TERM:-dumb} != dumb ]]; then UI_COLOR=1; else UI_COLOR=0; fi
+      ;;
+  esac
+
+  if ((UI_COLOR)); then
+    C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'
+    C_CYAN=$'\033[36m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'
+    C_RED=$'\033[31m'; C_EDGE=$'\033[38;5;45m'
+  else
+    C_EDGE=''
+  fi
+
+  cmdline="$(tr '\n' ' ' 2>/dev/null </proc/cmdline || true)"
+  case "$cmdline" in
+    *console=ttyS*|*console=ttyAMA*) serial=1 ;;
+  esac
+
+  # Serial consoles and the Linux text console are safest with ASCII only.
+  if ((UI_WIDTH >= 60 && serial == 0)) \
+    && [[ ${TERM:-dumb} != dumb && ${TERM:-} != linux ]] \
+    && [[ $locale == *UTF-8* || $locale == *utf8* ]]; then
+    UI_UNICODE=1
+    BOX_TL='╭' BOX_TR='╮' BOX_BL='╰' BOX_BR='╯' BOX_H='─'
+    UI_BULLET='◆' UI_ARROW='→' UI_SEP='·'
+  fi
+  return 0
+}
+
+ui_repeat() {
+  local char="$1" count="$2" out="" i
+  for ((i = 0; i < count; i += 1)); do out+="$char"; done
+  printf '%s' "$out"
+}
+
+ui_truncate() {
+  local text="$1" max="$2"
+  if ((max < 4)); then printf '%s' "${text:0:max}"; return 0; fi
+  if ((${#text} > max)); then printf '%s...' "${text:0:max - 3}"; return 0; fi
+  printf '%s' "$text"
+}
+
+ui_pad() {
+  local text="$1" width="$2" count
+  count=$((width - ${#text}))
+  ((count > 0)) || return 0
+  ui_repeat ' ' "$count"
+}
+
+ui_box() {
+  local title subtitle inner rule
+  title="$(ui_truncate "$1" "$((UI_WIDTH - 6))")"
+  subtitle="$(ui_truncate "${2-}" "$((UI_WIDTH - 6))")"
+  inner=$((UI_WIDTH - 4))
+  rule="$(ui_repeat "$BOX_H" "$inner")"
+  printf '\n%s%s%s%s%s\n' "$C_EDGE" "$BOX_TL" "$rule" "$BOX_TR" "$C_RESET" >&2
+  printf '%s%s %s%s%s%s %s%s\n' \
+    "$C_EDGE" "$BOX_H" "$C_BOLD" "$title" "$C_RESET" \
+    "$(ui_pad "$title" "$((inner - 2))")" "$BOX_H" "$C_RESET" >&2
+  if [[ -n $subtitle ]]; then
+    printf '%s%s %s%s%s%s %s%s\n' \
+      "$C_EDGE" "$BOX_H" "$C_DIM" "$subtitle" "$C_RESET" \
+      "$(ui_pad "$subtitle" "$((inner - 2))")" "$BOX_H" "$C_RESET" >&2
+  fi
+  printf '%s%s%s%s%s\n\n' "$C_EDGE" "$BOX_BL" "$rule" "$BOX_BR" "$C_RESET" >&2
+}
+
+ui_section() {
+  printf '\n%s%s %s%s\n' "$C_CYAN" "$UI_BULLET" "$*" "$C_RESET" >&2
+}
+
+ui_step() {
+  local current="$1" total="$2"; shift 2
+  printf '%s[%s/%s]%s %s%s%s\n' \
+    "$C_CYAN" "$current" "$total" "$C_RESET" "$C_BOLD" "$*" "$C_RESET" >&2
+}
+
+ui_kv() {
+  local key="$1"; shift
+  printf '  %s%-16s%s %s\n' "$C_DIM" "$key" "$C_RESET" "$*" >&2
+}
+
+ui_menu_item() {
+  local number="$1" title="$2" description="${3-}"
+  printf '  %s%s%s  %s%s%s\n' \
+    "$C_CYAN" "$number" "$C_RESET" "$C_BOLD" "$title" "$C_RESET" >&2
+  if [[ -n $description ]]; then
+    printf '      %s%s%s\n' "$C_DIM" "$description" "$C_RESET" >&2
+  fi
+  return 0
+}
+
+ui_success() {
+  printf '\n%s%s %s%s\n' "$C_GREEN" "$UI_BULLET" "$*" "$C_RESET" >&2
+}
+
+ui_firmware_label() {
+  if [[ -d /sys/firmware/efi ]]; then printf 'UEFI'; else printf 'BIOS/legacy'; fi
+}
+
+ui_arch_label() {
+  case "$(uname -m 2>/dev/null || printf '%s' unknown)" in
+    x86_64|amd64) printf 'x86-64' ;;
+    aarch64|arm64) printf 'arm64' ;;
+    *) uname -m 2>/dev/null || printf '%s' unknown ;;
+  esac
+}
+
+ui_banner() {
+  local mode="${1:-interactive}"
+  ui_box "WREXROS INSTALLER ${WREXR_VERSION}" \
+    "$(ui_firmware_label) ${UI_SEP} $(ui_arch_label) ${UI_SEP} ${mode}"
+}
+
+ui_summary() {
+  ui_box 'INSTALLATION PLAN' 'Review before any disk is modified'
+  ui_kv 'Target' "$TARGET"
+  ui_kv 'Hostname' "$CFG_HOSTNAME"
+  ui_kv 'Firmware' "$(ui_firmware_label)"
+  ui_kv 'Storage' "${CFG_FS}/${CFG_RAID}, ${#DISK_ROWS[@]} disk(s)"
+  ui_kv 'Network' "${NET_MODE}, interface ${NET_IFACE}, bridge ${NET_BRIDGE}"
+  ui_kv 'Management' "https://<${CFG_HOSTNAME}-ip>:${CFG_UI_PORT}/"
+}
+
 # ---- logging and error handling -------------------------------------------------
-log_info()  { printf '\033[1;32m[ wrexr ]\033[0m %s\n' "$*" >&2; }
-log_warn()  { printf '\033[1;33m[ warn  ]\033[0m %s\n' "$*" >&2; }
-log_error() { printf '\033[1;31m[ error ]\033[0m %s\n' "$*" >&2; }
+log_info()  { printf '%s%s wrexr%s %s\n' "$C_GREEN" "$UI_BULLET" "$C_RESET" "$*" >&2; }
+log_warn()  { printf '%s%s warn%s %s\n' "$C_YELLOW" "$UI_BULLET" "$C_RESET" "$*" >&2; }
+log_error() { printf '%s%s error%s %s\n' "$C_RED" "$UI_BULLET" "$C_RESET" "$*" >&2; }
 die() { log_error "$*"; exit 1; }
 
 on_error() {
@@ -213,9 +370,9 @@ read_config_globals() {
 # ---- interactive configuration --------------------------------------------------
 prompt_default() {
   local prompt="$1" def="${2-}" answer=""
-  printf '%s' "$prompt" >&2
-  [[ -n $def ]] && printf ' [%s]' "$def" >&2
-  printf ': ' >&2
+  printf '%s%s%s %s' "$C_CYAN" "$UI_ARROW" "$C_RESET" "$prompt" >&2
+  if [[ -n $def ]]; then printf ' [%s]' "$def" >&2; fi
+  printf '%s:%s ' "$C_DIM" "$C_RESET" >&2
   IFS= read -r answer || true
   printf '%s' "${answer:-$def}"
 }
@@ -230,21 +387,26 @@ prompt_secret() {
 }
 
 interactive_standard() {
+  ui_section 'Detecting available disks'
   disk_select_standard
+  disk_print_table
   CFG_HOSTNAME="wrexr"; CFG_TIMEZONE="UTC"; CFG_KEYBOARD="us"
   CFG_FS="zfs"; CFG_SWAP="true"; CFG_SWAP_SIZE="4G"
   NET_MODE="dhcp"; NET_IFACE="auto"; NET_BRIDGE="br0"
   CFG_UI_PORT="8443"; CFG_CHANNEL="stable"
   USER_ROWS=(); SHARE_ROWS=(); KERNEL_OPTIONS=()
+  ui_section 'Administrator access'
   interactive_credentials
 }
 
 interactive_advanced() {
+  ui_section 'Detecting available disks'
   disk_enumerate
   ((${#DISK_PATHS[@]} > 0)) || die "no disks found (check 'lsblk -d')"
   disk_print_table
   local sel="" piece idx role
-  printf '%s\n' "Assign roles, e.g. '1=system,2=data,3=parity,4=cache'." >&2
+  printf '  %sAssign roles: %s1=system,2=data,3=parity,4=cache%s\n' \
+    "$C_DIM" "$C_CYAN" "$C_RESET" >&2
   sel="$(prompt_default 'Disks and roles' '')"
   [[ -n $sel ]] || die "at least one disk must be assigned"
   DISK_ROWS=()
@@ -259,6 +421,7 @@ interactive_advanced() {
     DISK_ROWS+=("$(printf '%s\t%s\ttrue' "${DISK_PATHS[idx - 1]}" "$role")")
   done
 
+  ui_section 'Host and network'
   CFG_HOSTNAME="$(prompt_default 'Hostname' wrexr)"
   CFG_FS="$(prompt_default 'Filesystem (zfs/btrfs/ext4)' zfs)"
   CFG_RAID="$(prompt_default 'RAID (single/mirror/raidz1/raidz2/raidz10)' single)"
@@ -282,6 +445,7 @@ interactive_advanced() {
   kopts="$(prompt_default 'Extra kernel options (space separated)' '')"
   read -r -a KERNEL_OPTIONS <<< "$kopts"
 
+  ui_section 'Administrator access'
   interactive_credentials
   interactive_users_shares
 }
@@ -303,6 +467,7 @@ interactive_credentials() {
 
 interactive_users_shares() {
   USER_ROWS=(); SHARE_ROWS=()
+  ui_section 'Optional users and shares'
   local spec="" IFS_SAVE="$IFS"
   spec="$(prompt_default 'Extra users (name:groups:shell, comma separated)' '')"
   if [[ -n $spec ]]; then
@@ -407,11 +572,12 @@ process.stdout.write(JSON.stringify(o, null, 2));
 }
 
 interactive_config() {
-  cat <<EOF >&2
-WrexrOS installer ${WREXR_VERSION}
-  1) Standard install  - automatic disk layout, DHCP, UTC, ZFS, sensible defaults
-  2) Advanced options  - manual disks, filesystem, RAID, network, users, shares
-EOF
+  ui_banner 'guided mode'
+  ui_section 'Choose an install path'
+  ui_menu_item '1)' 'Standard install' \
+    'Automatic disks, DHCP, UTC, ZFS and sensible defaults.'
+  ui_menu_item '2)' 'Advanced options' \
+    'Manual disks, filesystem, RAID, network, users and shares.'
   if ((ADVANCED)); then
     interactive_advanced
   else
@@ -443,6 +609,8 @@ Options:
   --dry-run                Print every command instead of executing it. No disk is touched.
   --yes                    Assume yes; required in unattended mode; skips wipe prompt.
   --verbose                Print executed commands as well as progress messages.
+  --color                  Force coloured terminal output even when redirected.
+  --no-color               Plain ASCII output for logs, serial consoles and scripts.
   --version                Print installer version and exit.
   --help                   Show this help.
 
@@ -468,6 +636,8 @@ parse_args() {
       --dry-run) DRY_RUN=1 ;;
       --yes) YES=1 ;;
       --verbose) VERBOSE=1 ;;
+      --color) UI_COLOR_MODE=always ;;
+      --no-color) UI_COLOR_MODE=never ;;
       --version) printf 'wrexr-installer %s\n' "$WREXR_VERSION"; exit 0 ;;
       --help|-h) usage; exit 0 ;;
       *) die "unknown option: $1 (try --help)" ;;
@@ -512,26 +682,31 @@ preflight_filesystem() {
 
 main() {
   parse_args "$@"
+  ui_init
   WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/wrexr-install.XXXXXX")"
   preflight_common
 
   if [[ $WREXR_MODE == interactive ]]; then
     interactive_config
   else
+    ui_banner 'unattended mode'
     validate_config_file "$RAW_CONFIG"
     read_config_globals
     [[ $CFG_FORCE == true ]] || die "unattended config must set force:true to acknowledge disk wiping"
     ((YES)) || die "unattended installs require --yes (refusing to wipe disks without it)"
   fi
 
+  ui_step 1 6 'Validating configuration and disks'
   preflight_filesystem "$CFG_FS"
   disk_validate_configured
   network_resolve_interface
+  ui_summary
   disk_confirm_wipe
 
   # Order matters: partition and mount the target before debootstrap, mount the
   # API filesystems before any chroot, then write fstab after debootstrap so the
   # base conffile cannot overwrite our entries.
+  ui_step 2 6 'Preparing storage and Debian base'
   disk_partition_system
   disk_create_root_fs
   base_debootstrap
@@ -539,12 +714,20 @@ main() {
   disk_prepare_storage
   mdadm_register_arrays
   fstab_write
+
+  ui_step 3 6 'Installing the WrexrOS runtime'
   base_copy_packages
   base_copy_repo
   install_node_runtime_target
+
+  ui_step 4 6 'Configuring network and services'
   network_configure
   base_configure
+
+  ui_step 5 6 'Installing the bootloader'
   bootloader_install
+
+  ui_step 6 6 'Finalizing installation'
   finish_install
 }
 

@@ -10,8 +10,12 @@ finish_install() {
 
   disk_unmount_all
 
-  printf '\n'
-  log_info "WrexrOS ${WREXR_VERSION} installed to ${TARGET}"
+  printf '\n' >&2
+  if declare -F ui_success >/dev/null 2>&1; then
+    ui_success "WrexrOS ${WREXR_VERSION} installed to ${TARGET}"
+  else
+    log_info "WrexrOS ${WREXR_VERSION} installed to ${TARGET}"
+  fi
   log_info "Management URL: https://<${CFG_HOSTNAME}-ip>:${CFG_UI_PORT}/"
   log_info "First boot: the setup wizard is required (/var/lib/wrexr/setup-complete is absent)."
   if ((YES)); then

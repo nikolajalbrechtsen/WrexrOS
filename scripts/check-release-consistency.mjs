@@ -79,6 +79,17 @@ try {
 }
 
 try {
+  const installer = read('installer/wrexr-installer.sh');
+  for (const needle of ['ui_init', '--no-color', 'ui_summary', 'ui_firmware_label']) {
+    if (!installer.includes(needle)) {
+      problems.push(`installer/wrexr-installer.sh is missing adaptive UI helper ${needle}`);
+    }
+  }
+} catch (error) {
+  problems.push(`cannot read installer/wrexr-installer.sh: ${error.message}`);
+}
+
+try {
   const build = read('packaging/build-iso.sh');
   if (build.includes('wrexr.install=standard"')) {
     problems.push('packaging/build-iso.sh still sets a global wrexr.install=standard default');

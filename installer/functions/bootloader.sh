@@ -4,7 +4,9 @@
 bootloader_install() {
   log_info "Installing GRUB and building initramfs"
 
-  local root_cmdline="" cmdline opt
+  local root_cmdline="" cmdline opt live_cmdline="" serial_kernel="" serial_speed=115200
+  local serial_unit=0 grub_terminal="console" grub_serial=""
+  local -a grub_lines=()
   case "$CFG_FS" in
     zfs) root_cmdline="root=ZFS=rpool" ;;
     btrfs) root_cmdline="rootflags=subvol=@" ;;
@@ -13,16 +15,41 @@ bootloader_install() {
   cmdline="quiet splash"
   for opt in "${KERNEL_OPTIONS[@]}"; do cmdline="${cmdline} ${opt}"; done
 
-  write_file "$TARGET/etc/default/grub" "$(printf '%s\n' \
-    '# Managed by wrexr-installer.sh' \
-    'GRUB_DEFAULT=0' \
-    'GRUB_TIMEOUT=3' \
-    'GRUB_DISTRIBUTOR="WrexrOS"' \
-    "GRUB_CMDLINE_LINUX_DEFAULT=\"${cmdline}\"" \
-    "GRUB_CMDLINE_LINUX=\"${root_cmdline}\"" \
-    'GRUB_DISABLE_OS_PROBER=false' \
-    'GRUB_ENABLE_CRYPTODISK=n' \
-    'GRUB_TERMINAL="console"')" 644
+  # If the live ISO was booted over a serial console, carry that console into
+  # the installed kernel and GRUB. This keeps Proxmox/noVNC, IPMI and headless
+  # servers usable without making serial a requirement for VGA systems.
+  live_cmdline="$(tr '\n' ' ' 2>/dev/null </proc/cmdline || true)"
+  for opt in $live_cmdline; do
+    case "$opt" in
+      console=ttyS*)
+        serial_kernel="${serial_kernel:+$serial_kernel }$opt"
+        serial_unit="${opt#console=ttyS}"; serial_unit="${serial_unit%%,*}"
+        [[ $serial_unit =~ ^[0-9]+$ ]] || serial_unit=0
+        local candidate="${opt##*,}"
+        [[ $candidate =~ ^[0-9]+$ ]] && serial_speed="$candidate"
+        ;;
+      console=ttyAMA*) serial_kernel="${serial_kernel:+$serial_kernel }$opt" ;;
+    esac
+  done
+  if [[ -n $serial_kernel ]]; then
+    cmdline="${cmdline} ${serial_kernel}"
+    grub_terminal="console serial"
+    grub_serial="GRUB_SERIAL_COMMAND=\"serial --speed=${serial_speed} --unit=${serial_unit} --word=8 --parity=no --stop=1\""
+  fi
+
+  grub_lines=(
+    '# Managed by wrexr-installer.sh'
+    'GRUB_DEFAULT=0'
+    'GRUB_TIMEOUT=3'
+    'GRUB_DISTRIBUTOR="WrexrOS"'
+    "GRUB_CMDLINE_LINUX_DEFAULT=\"${cmdline}\""
+    "GRUB_CMDLINE_LINUX=\"${root_cmdline}\""
+    'GRUB_DISABLE_OS_PROBER=false'
+    'GRUB_ENABLE_CRYPTODISK=n'
+    "GRUB_TERMINAL=\"${grub_terminal}\""
+  )
+  if [[ -n $grub_serial ]]; then grub_lines+=("$grub_serial"); fi
+  write_file "$TARGET/etc/default/grub" "$(printf '%s\n' "${grub_lines[@]}")" 644
 
   local efi=0
   [[ -d /sys/firmware/efi ]] && efi=1

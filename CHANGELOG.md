@@ -11,6 +11,20 @@ All notable changes to WrexrOS are documented here. The format is based on
 - Alert delivery backends (email, webhook, Pushover) and backup replication.
 - Plugin marketplace and localization packs.
 
+## [0.1.5] - 2026-11-22
+
+### Changed
+- The text installer now uses a responsive, capability-detected terminal UI. It detects terminal
+  width, uses Unicode box drawing only on UTF-8 capable terminals, and falls back to clean ASCII
+  on serial consoles, the Linux text console and non-UTF-8 locales.
+- Added `--color`, `--no-color` and `WREXR_UI_COLOR` controls so the same installer produces a
+  rich console or sanitized CI logs.
+- The guided flow now shows a firmware/architecture banner, grouped setup sections, a numbered
+  installation plan and progress steps. Disk tables, network choices and the final management URL
+  are easier to scan on 80-column displays.
+- Installations booted over a serial console now carry the detected `console=ttyS...` setting into
+  the installed kernel and GRUB, while VGA/UEFI/BIOS systems keep the existing console behavior.
+
 ## [0.1.4] - 2026-11-22
 
 ### Fixed
@@ -142,7 +156,8 @@ this release establishes the full foundation.
 - Least-privilege daemon with systemd sandboxing and a narrow sudoers allowlist.
 - Signed update verification; unsigned assets refused when a trust key is installed.
 
-[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/nikolajalbrechtsen/WrexrOS/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.5
 [0.1.4]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.4
 [0.1.3]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.3
 [0.1.2]: https://github.com/nikolajalbrechtsen/WrexrOS/releases/tag/v0.1.2

@@ -10,6 +10,16 @@ sudo bash installer/wrexr-installer.sh --dry-run --yes \
   --config installer/examples/unattended-standard.json
 ```
 
+## Terminal interface
+
+The installer adapts to the console it is running on:
+
+* VGA, noVNC, SSH and modern terminals get colours, box drawing, grouped sections and progress steps.
+* Serial consoles, `TERM=linux`, non-UTF-8 locales and CI logs automatically get plain ASCII output.
+* Terminal width is detected from `/dev/tty`, `COLUMNS` or `tput`; content is clipped to stay readable on 80-column displays.
+* `--no-color` (or `NO_COLOR=1`, `WREXR_UI_COLOR=never`) forces plain output. `--color` forces rich output.
+* UEFI and legacy BIOS are detected and shown in the banner. If installation media was booted with `console=ttyS...`, that console is carried into the installed kernel and GRUB.
+
 ## Interactive paths
 
 Boot the ISO and run `sudo /opt/wrexr/installer/wrexr-installer.sh --interactive --advanced`,

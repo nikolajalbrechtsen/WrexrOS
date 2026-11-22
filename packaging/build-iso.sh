@@ -41,7 +41,7 @@ read_version() {
   if [[ -r ${REPO_ROOT}/VERSION ]]; then
     VERSION="$(head -n 1 "${REPO_ROOT}/VERSION" | tr -d '\r\n')"
   else
-    VERSION="0.1.4"
+    VERSION="0.1.5"
     log_warn "no ../VERSION file found; using ${VERSION} (set WREXR_VERSION to override)"
   fi
   [[ -n $VERSION ]] || die "version string is empty"

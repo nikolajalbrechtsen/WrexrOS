@@ -1,6 +1,6 @@
 {
   "name": "wrexctl",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Command-line client for the WrexrOS daemon API",
   "type": "module",
   "private": false,
